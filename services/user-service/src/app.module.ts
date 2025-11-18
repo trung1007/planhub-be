@@ -7,6 +7,7 @@ import { RoleModule } from './modules/role/role.module';
 import { PermissionModule } from './modules/permission/permission.module';
 import { DevtoolsModule } from '@nestjs/devtools-integration';
 import { AuthModule } from './modules/auth/auth.module';
+import { MailerModule } from '@nestjs-modules/mailer';
 
 @Module({
   imports: [
@@ -27,12 +28,24 @@ import { AuthModule } from './modules/auth/auth.module';
       synchronize: true,
     }),
 
+    MailerModule.forRoot({
+      transport: {
+        service: 'gmail',
+        auth: {
+          user: process.env.MAIL_USER,
+          pass: process.env.MAIL_PASSWORD,
+        },
+      },
+      defaults: {
+        from: '"PlanHub" <no-reply@planhub.com>',
+      },
+    }),
+
     // App modules
     UserModule,
     RoleModule,
     PermissionModule,
-    AuthModule
+    AuthModule,
   ],
 })
-
 export class AppModule {}

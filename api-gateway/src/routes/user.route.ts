@@ -1,16 +1,22 @@
-import { Controller, All, Req, Res } from '@nestjs/common';
+import { Controller, All, Req, Res, Post } from '@nestjs/common';
 import { HttpProxyService } from '../services/http-proxy.service';
+import { Public } from 'common/public.decorator';
 
 @Controller('users')
 export class UserRoute {
- 
-
   constructor(private readonly proxy: HttpProxyService) {}
 
   @All()
   handleRoot(@Req() req, @Res() res) {
     return this.handleAll(req, res);
   }
+  @Public()
+  @Post('register')
+  login(@Req() req, @Res() res) {
+    return this.handleAll(req, res);
+  }
+
+ 
 
   @All('*path')
   async handleAll(@Req() req, @Res() res) {

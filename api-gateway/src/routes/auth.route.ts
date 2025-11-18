@@ -1,14 +1,42 @@
-import { Controller, All, Req, Res } from '@nestjs/common';
+import { Controller, All, Req, Res, Post } from '@nestjs/common';
 import { HttpProxyService } from '../services/http-proxy.service';
+import { Public } from 'common/public.decorator';
 
 @Controller('auth')
 export class AuthRoute {
- 
-
   constructor(private readonly proxy: HttpProxyService) {}
 
   @All()
   handleRoot(@Req() req, @Res() res) {
+    return this.handleAll(req, res);
+  }
+
+  @Public()
+  @Post('login')
+  login(@Req() req, @Res() res) {
+    return this.handleAll(req, res);
+  }
+  @Public()
+  @Post('refresh-token')
+  refreshToken(@Req() req, @Res() res) {
+    return this.handleAll(req, res);
+  }
+
+  @Public()
+  @Post('forgot-password')
+  forgotPassword(@Req() req, @Res() res) {
+    return this.handleAll(req, res);
+  }
+
+  @Public()
+  @Post('reset-password')
+  resetPassword(@Req() req, @Res() res) {
+    return this.handleAll(req, res);
+  }
+
+  @Public()
+  @Post('logout')
+  logout(@Req() req, @Res() res) {
     return this.handleAll(req, res);
   }
 
