@@ -11,6 +11,7 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { User } from './user.entity';
 import * as bcrypt from 'bcrypt';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { UserResponseDto } from './dto/user-response.dto';
 
 @Injectable()
 export class UserService {
@@ -24,15 +25,18 @@ export class UserService {
   // }
 
   async findAll(page = 1, limit = 10) {
-    // Đảm bảo page, limit là số dương
     const pageNumber = Math.max(1, Number(page) || 1);
     const limitNumber = Math.max(1, Number(limit) || 10);
 
-    const [items, total] = await this.userRepo.findAndCount({
+    const [users, total] = await this.userRepo.findAndCount({
       skip: (pageNumber - 1) * limitNumber,
       take: limitNumber,
-      order: { id: 'ASC' }, // optional: sắp xếp theo id
+      order: { id: 'ASC' },
     });
+
+    const items = await Promise.all(
+      users.map((u) => this.mapUserToResponseDto(u)),
+    );
 
     return {
       items,
@@ -53,6 +57,12 @@ export class UserService {
   }
 
   async create(dto: CreateUserDto): Promise<User> {
+    const createdUser = await this.userRepo.findOne({
+      where: { id: dto.createdUserId },
+    });
+    if (!createdUser)
+      throw new NotFoundException(`User ${dto.createdUserId} not found`);
+
     // Mã hóa mật khẩu
     const hashedPassword = await bcrypt.hash(dto.password, 10);
 
@@ -62,10 +72,18 @@ export class UserService {
       password: hashedPassword,
     });
 
+    user.createdBy = dto.createdUserId;
+
     return this.userRepo.save(user);
   }
 
   async update(id: number, dto: UpdateUserDto): Promise<User> {
+    const updatedUser = await this.userRepo.findOne({
+      where: { id: dto.updatedUserId },
+    });
+    if (!updatedUser)
+      throw new NotFoundException(`User ${dto.updatedUserId} not found`);
+
     const user = await this.findOne(id);
 
     if (dto.username && dto.username !== user.username) {
@@ -89,6 +107,7 @@ export class UserService {
     }
 
     Object.assign(user, dto);
+    user.updatedBy = dto.updatedUserId;
     return this.userRepo.save(user);
   }
 
@@ -117,5 +136,30 @@ export class UserService {
   async remove(id: number) {
     const found = await this.findOne(id);
     return this.userRepo.remove(found);
+  }
+
+  private async mapUserToResponseDto(u: User): Promise<UserResponseDto> {
+    const createdByUsername = u.createdBy
+      ? (await this.userRepo.findOne({ where: { id: u.createdBy } }))
+          ?.username || ''
+      : '';
+
+    const updatedByUsername = u.updatedBy
+      ? (await this.userRepo.findOne({ where: { id: u.updatedBy } }))
+          ?.username || ''
+      : '';
+
+    // Dùng Object.assign để merge nhanh
+    return Object.assign(new UserResponseDto(), {
+      id: u.id,
+      username: u.username,
+      email: u.email,
+      phoneNumber: u.phoneNumber,
+      fullName: u.fullName,
+      createdBy: createdByUsername,
+      createdAt: u.createdAt,
+      updatedBy: updatedByUsername,
+      updatedAt: u.updatedAt,
+    });
   }
 }

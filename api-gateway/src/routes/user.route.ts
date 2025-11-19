@@ -2,13 +2,9 @@ import { Controller, All, Req, Res, Post, Get } from '@nestjs/common';
 import { HttpProxyService } from '../services/http-proxy.service';
 import { Public } from 'common/public.decorator';
 
-@Controller('users')
+@Controller('userservice')
 export class UserRoute {
   constructor(private readonly proxy: HttpProxyService) {}
-  @All()
-  handleRoot(@Req() req, @Res() res) {
-    return this.handleAll(req, res);
-  }
 
   @All('*path')
   async handleAll(@Req() req, @Res() res) {
@@ -18,12 +14,10 @@ export class UserRoute {
     const body = req.body;
     const headers = req.headers;
 
-    console.log('GATEWAY → USER:', { method, url, body });
-
     try {
       const result = await this.proxy.forward(method, url, body, headers);
       console.log('⬅️ User Service trả về:', result);
-      return res.json(result);
+      return res.status(result.status).json(result.data);
     } catch (err) {
       console.log('❌ ERROR:', err.message);
       const status = err.response?.status || 500;

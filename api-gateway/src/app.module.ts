@@ -14,11 +14,11 @@ import { RateLimitGuard } from 'common/rate-limit.guard';
     GatewayModule,
   ],
   providers: [
-    // RedisProvider,
-    // {
-    //   provide: APP_GUARD,
-    //   useClass: RateLimitGuard,
-    // },
+    RedisProvider,
+    {
+      provide: APP_GUARD,
+      useClass: RateLimitGuard,
+    },
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard,

@@ -142,13 +142,12 @@ export class AuthService {
       throw new UnauthorizedException('Missing refresh token');
     }
 
-    // Verify refresh token để lấy payload.sub (id user)
     let payload: any;
 
     try {
       payload = await this.jwtService.verifyAsync(refreshToken);
     } catch (err) {
-      // Không quan trọng expired hay invalid, chỉ cần không cho logout nếu token không hợp lệ
+     
       throw new UnauthorizedException('Refresh token không hợp lệ');
     }
 

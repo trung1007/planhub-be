@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Param, Body } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Param, Body, Query } from '@nestjs/common';
 import { RoleService } from './role.service';
 
 import { CreateRoleDto } from './dto/create-role.dto';
@@ -8,10 +8,14 @@ import { UpdateRoleDto } from './dto/update-role.dto';
 export class RoleController {
   constructor(private readonly roleService: RoleService) {}
 
+  // @Get()
+  // findAll() {
+  //   return this.roleService.findAll();
+  // }
   @Get()
-  findAll() {
-    return this.roleService.findAll();
-  }
+    async getAll(@Query('page') page?: number, @Query('limit') limit?: number) {
+      return this.roleService.findAll(page, limit);
+    }
 
   @Get(':id')
   findOne(@Param('id') id: string) {

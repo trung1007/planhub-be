@@ -35,7 +35,10 @@ export class Role {
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
-
+  @Column({ name: 'created_by', nullable: true })
+  createdBy: number;
+  @Column({ name: 'updated_by', nullable: true })
+  updatedBy: number;
   @UpdateDateColumn({ name: 'updated_at' })
   updatedAt: Date;
 }

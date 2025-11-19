@@ -16,4 +16,7 @@ export class CreateUserDto {
   @IsEmail()
   email: string;
 
+  @IsNotEmpty()
+  createdUserId: number;
+
 }

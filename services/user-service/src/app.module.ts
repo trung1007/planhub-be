@@ -8,6 +8,7 @@ import { PermissionModule } from './modules/permission/permission.module';
 import { DevtoolsModule } from '@nestjs/devtools-integration';
 import { AuthModule } from './modules/auth/auth.module';
 import { MailerModule } from '@nestjs-modules/mailer';
+import { RouterModule } from '@nestjs/core';
 
 @Module({
   imports: [
@@ -40,6 +41,25 @@ import { MailerModule } from '@nestjs-modules/mailer';
         from: '"PlanHub" <no-reply@planhub.com>',
       },
     }),
+    // Config endpoint router
+    RouterModule.register([
+      {
+        path: 'userservice',
+        module: UserModule,
+      },
+      {
+        path: 'userservice',
+        module: RoleModule,
+      },
+      {
+        path: 'userservice',
+        module: PermissionModule,
+      },
+      {
+        path: '',
+        module: AuthModule,
+      },
+    ]),
 
     // App modules
     UserModule,
