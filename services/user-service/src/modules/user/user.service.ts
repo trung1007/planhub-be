@@ -19,8 +19,28 @@ export class UserService {
     private readonly userRepo: Repository<User>,
   ) {}
 
-  async findAll(): Promise<User[]> {
-    return this.userRepo.find();
+  // async findAll(): Promise<User[]> {
+  //   return this.userRepo.find();
+  // }
+
+  async findAll(page = 1, limit = 10) {
+    // Đảm bảo page, limit là số dương
+    const pageNumber = Math.max(1, Number(page) || 1);
+    const limitNumber = Math.max(1, Number(limit) || 10);
+
+    const [items, total] = await this.userRepo.findAndCount({
+      skip: (pageNumber - 1) * limitNumber,
+      take: limitNumber,
+      order: { id: 'ASC' }, // optional: sắp xếp theo id
+    });
+
+    return {
+      items,
+      total,
+      page: pageNumber,
+      limit: limitNumber,
+      totalPages: Math.ceil(total / limitNumber),
+    };
   }
 
   async findOne(id: number): Promise<User> {
@@ -93,7 +113,6 @@ export class UserService {
     // 3. Lưu lại user
     return this.userRepo.save(user);
   }
-
 
   async remove(id: number) {
     const found = await this.findOne(id);

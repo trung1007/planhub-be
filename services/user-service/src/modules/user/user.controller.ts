@@ -6,6 +6,7 @@ import {
   Param,
   Put,
   Delete,
+  Query,
 } from '@nestjs/common';
 
 import { UserService } from './user.service';
@@ -18,8 +19,8 @@ export class UserController {
   constructor(private readonly userService: UserService) {}
 
   @Get()
-  async getAll() {
-    return this.userService.findAll();
+  async getAll(@Query('page') page?: number, @Query('limit') limit?: number) {
+    return this.userService.findAll(page, limit);
   }
 
   @Get(':id')
