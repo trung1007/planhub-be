@@ -17,6 +17,11 @@ export class AuthRoute {
     return this.handleAll(req, res);
   }
   @Public()
+  @Post('register')
+  register(@Req() req, @Res() res) {
+    return this.handleAll(req, res);
+  }
+  @Public()
   @Post('refresh-token')
   refreshToken(@Req() req, @Res() res) {
     return this.handleAll(req, res);

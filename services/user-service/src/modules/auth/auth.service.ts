@@ -13,6 +13,7 @@ import { User } from '../user/user.entity';
 import { LoginDto } from './dto/login.dto';
 import { MailerService } from '@nestjs-modules/mailer';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { RegisterDto } from './dto/register.dto';
 
 @Injectable()
 export class AuthService {
@@ -74,6 +75,19 @@ export class AuthService {
       refresh_token,
     };
   }
+  async register(dto: RegisterDto): Promise<User> {
+    // Mã hóa mật khẩu
+    const hashedPassword = await bcrypt.hash(dto.password, 10);
+
+    // Tạo user mới với mật khẩu đã hash
+    const user = this.userRepo.create({
+      ...dto,
+      password: hashedPassword,
+    });
+
+    return this.userRepo.save(user);
+  }
+
   async refreshToken(refreshToken: string) {
     if (!refreshToken) {
       throw new UnauthorizedException('Missing refresh token');
