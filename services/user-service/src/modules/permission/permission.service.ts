@@ -5,7 +5,6 @@ import { Permission } from './permission.entity';
 import { CreatePermissionDto } from './dto/create-permission.dto';
 import { UpdatePermissionDto } from './dto/update-permission.dto';
 
-
 @Injectable()
 export class PermissionService {
   constructor(
@@ -18,10 +17,31 @@ export class PermissionService {
     return this.permissionRepository.save(permission);
   }
 
-  async findAll(): Promise<Permission[]> {
-    return this.permissionRepository.find({
-      relations: ['roles'], // nếu muốn load roles
+  async findAll(page: number, limit: number) {
+    const skip = (page - 1) * limit;
+
+    const [items, total] = await this.permissionRepository.findAndCount({
+      relations: ['roles'], // nếu bạn muốn load roles
+      skip,
+      take: limit,
+      order: { id: 'ASC' }, // tuỳ chọn
     });
+
+    return {
+      items,
+      total,
+      page,
+      limit,
+    };
+  }
+  async getAllIds(): Promise<{ ids: number[] }> {
+    const list = await this.permissionRepository.find({
+      select: ['id'], // chỉ lấy ID
+    });
+
+    return {
+      ids: list.map((i) => i.id),
+    };
   }
 
   async findOne(id: number): Promise<Permission> {

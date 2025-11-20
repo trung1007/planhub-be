@@ -89,17 +89,37 @@ export class RoleService {
   }
 
   async update(id: number, dto: UpdateRoleDto) {
-    const role = await this.roleRepository.findOne({
-      where: { id },
-    });
+    // 1. Tìm role
+    const role = await this.roleRepository.findOne({ where: { id } });
+    if (!role) throw new NotFoundException(`Role ${id} not found`);
 
-    if (!role) {
-      throw new NotFoundException('Role not found');
+    // 2. Kiểm tra user cập nhật
+    const updatedUser = await this.userRepo.findOne({
+      where: { id: dto.updatedUserId },
+    });
+    if (!updatedUser)
+      throw new NotFoundException(`User ${dto.updatedUserId} not found`);
+
+    // 3. Nếu gửi lên key mới → check key có bị trùng
+    if (dto.key && dto.key !== role.key) {
+      const existingRole = await this.roleRepository.findOne({
+        where: { key: dto.key },
+      });
+
+      if (existingRole) {
+        throw new BadRequestException(
+          `Role with key '${dto.key}' already exists`,
+        );
+      }
     }
 
-    // Gán các trường được gửi lên
+    // 4. Gán dữ liệu
     Object.assign(role, dto);
 
+    // 5. Gán người cập nhật
+    role.updatedBy = dto.updatedUserId;
+
+    // 6. Lưu lại
     return this.roleRepository.save(role);
   }
 

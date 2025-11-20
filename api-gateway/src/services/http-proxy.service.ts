@@ -45,7 +45,7 @@ export class HttpProxyService {
     // 🟦 Xoá cache khi PUT/PATCH/DELETE
     if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
       // Xoá toàn bộ cache GET danh sách users
-      const userListPattern = `CACHE:GET:${process.env.USER_SERVICE_URL}/userservice/*`;
+      const userListPattern = `CACHE:GET:${process.env.USER_SERVICE_URL}/user-service/*`;
       const keys = await this.redis.keys(userListPattern);
 
       if (keys.length > 0) {

@@ -2,7 +2,7 @@ import { Controller, All, Req, Res, Post, Get } from '@nestjs/common';
 import { HttpProxyService } from '../services/http-proxy.service';
 import { Public } from 'common/public.decorator';
 
-@Controller('userservice')
+@Controller('user-service')
 export class UserRoute {
   constructor(private readonly proxy: HttpProxyService) {}
 

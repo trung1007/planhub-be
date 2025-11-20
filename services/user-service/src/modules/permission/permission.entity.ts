@@ -17,7 +17,7 @@ export class Permission {
   name: string;
 
   @Column({ unique: true })
-  key: string;
+  code: string;
 
   @Column()
   method: string; // GET / POST / PUT / DELETE

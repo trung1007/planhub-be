@@ -7,6 +7,7 @@ import {
   Param,
   Body,
   ParseIntPipe,
+  Query,
 } from '@nestjs/common';
 import { PermissionService } from './permission.service';
 import { CreatePermissionDto } from './dto/create-permission.dto';
@@ -22,9 +23,14 @@ export class PermissionController {
   }
 
   @Get()
-  findAll() {
-    return this.permissionService.findAll();
+  findAll(@Query('page') page = 1, @Query('limit') limit = 10) {
+    return this.permissionService.findAll(page, limit);
   }
+
+  @Get("all-ids")
+async getAllIds() {
+  return this.permissionService.getAllIds();
+}
 
   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: number) {

@@ -44,15 +44,15 @@ import { RouterModule } from '@nestjs/core';
     // Config endpoint router
     RouterModule.register([
       {
-        path: 'userservice',
+        path: 'user-service',
         module: UserModule,
       },
       {
-        path: 'userservice',
+        path: 'user-service',
         module: RoleModule,
       },
       {
-        path: 'userservice',
+        path: 'user-service',
         module: PermissionModule,
       },
       {
