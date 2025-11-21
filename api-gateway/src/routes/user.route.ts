@@ -16,7 +16,6 @@ export class UserRoute {
 
     try {
       const result = await this.proxy.forward(method, url, body, headers);
-      console.log('⬅️ User Service trả về:', result);
       return res.status(result.status).json(result.data);
     } catch (err) {
       console.log('❌ ERROR:', err.message);

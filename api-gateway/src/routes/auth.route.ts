@@ -57,7 +57,6 @@ export class AuthRoute {
 
     try {
       const result = await this.proxy.forward(method, url, body, headers);
-      console.log('⬅️ Auth Service trả về:', result);
        return res.status(result.status).json(result.data);
     } catch (err) {
       console.log('❌ ERROR:', err.message);

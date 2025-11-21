@@ -6,8 +6,10 @@ import {
   UpdateDateColumn,
   ManyToMany,
   JoinTable,
+  OneToMany,
 } from 'typeorm';
 import { Permission } from '../permission/permission.entity';
+import { RolePermission } from '../role-permission/role-permission.entity';
 
 @Entity({ name: 'roles' })
 export class Role {
@@ -23,15 +25,14 @@ export class Role {
   @Column({ nullable: true })
   description: string;
 
-  @ManyToMany(() => Permission, (permission) => permission.roles, {
-    cascade: true,
-  })
-  @JoinTable({
-    name: 'role_permission', // bảng trung gian
-    joinColumn: { name: 'role_id' },
-    inverseJoinColumn: { name: 'permission_id' },
-  })
-  permissions: Permission[];
+  @OneToMany(() => RolePermission, (rp) => rp.role, { cascade: true })
+  rolePermissions: RolePermission[];
+  // @JoinTable({
+  //   name: 'role_permission', // bảng trung gian
+  //   joinColumn: { name: 'role_id' },
+  //   inverseJoinColumn: { name: 'permission_id' },
+  // })
+  // permissions: Permission[];
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

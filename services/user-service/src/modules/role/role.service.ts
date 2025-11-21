@@ -13,6 +13,8 @@ import { CreateRoleDto } from './dto/create-role.dto';
 import { UpdateRoleDto } from './dto/update-role.dto';
 import { User } from '../user/user.entity';
 import { RoleResponseDto } from './dto/role-response.dto';
+import { RoleListResponseDto } from './dto/role-list-response.dto';
+import { RoleDetailResponseDto } from './dto/role-detail-response.dto';
 
 @Injectable()
 export class RoleService {
@@ -27,12 +29,6 @@ export class RoleService {
     private readonly userRepo: Repository<User>,
   ) {}
 
-  // async findAll() {
-  //   return this.roleRepository.find({
-  //     relations: ['permissions'],
-  //   });
-  // }
-
   async findAll(page = 1, limit = 10) {
     const pageNumber = Math.max(1, Number(page) || 1);
     const limitNumber = Math.max(1, Number(limit) || 10);
@@ -42,7 +38,6 @@ export class RoleService {
       skip: (pageNumber - 1) * limitNumber,
       take: limitNumber,
       order: { id: 'ASC' },
-      relations: ['permissions'],
     });
 
     const items = await Promise.all(
@@ -58,14 +53,66 @@ export class RoleService {
     };
   }
 
-  async findOne(id: number) {
-    const role = await this.roleRepository.findOne({
-      where: { id },
-      relations: ['permissions'],
-    });
+  // async findAll(page = 1, limit = 10) {
+  //   const pageNumber = Math.max(1, Number(page) || 1);
+  //   const limitNumber = Math.max(1, Number(limit) || 10);
+
+  //   const qb = this.roleRepository
+  //     .createQueryBuilder('role')
+  //     .leftJoinAndSelect(
+  //       'users',
+  //       'createdByUser',
+  //       'createdByUser.id = role.created_by',
+  //     )
+  //     .leftJoinAndSelect(
+  //       'users',
+  //       'updatedByUser',
+  //       'updatedByUser.id = role.updated_by',
+  //     )
+  //     .skip((pageNumber - 1) * limitNumber)
+  //     .take(limitNumber)
+  //     .orderBy('role.id', 'ASC');
+
+  //   const [roles, total] = await qb.getManyAndCount();
+
+  //   const items = roles.map((role) =>
+  //     this.mapRoleToListDto(
+  //       role,
+  //       (role as any).createdByUser,
+  //       (role as any).updatedByUser,
+  //     ),
+  //   );
+
+  //   return {
+  //     items,
+  //     total,
+  //     page: pageNumber,
+  //     limit: limitNumber,
+  //     totalPages: Math.ceil(total / limitNumber),
+  //   };
+  // }
+
+  // async findOne(id: number) {
+  //   const role = await this.roleRepository.findOne({
+  //     where: { id },
+  //     relations: ['rolePermissions', 'rolePermissions.permission'],
+  //   });
+
+  //   if (!role) throw new NotFoundException('Role not found');
+  //   return role;
+  // }
+
+  async findOne(id: number): Promise<RoleDetailResponseDto> {
+    const role = await this.roleRepository
+      .createQueryBuilder('role')
+      .leftJoinAndSelect('role.rolePermissions', 'rp')
+      .leftJoinAndSelect('rp.permission', 'permission')
+      .where('role.id = :id', { id })
+      .getOne();
 
     if (!role) throw new NotFoundException('Role not found');
-    return role;
+
+    return this.mapRoleToDetailDto(role);
   }
 
   async create(dto: CreateRoleDto) {
@@ -131,6 +178,25 @@ export class RoleService {
     return { message: 'Role deleted successfully' };
   }
 
+  private mapRoleToListDto(
+    role: Role,
+    createdByUser?: User,
+    updatedByUser?: User,
+  ): RoleListResponseDto {
+    return {
+      id: role.id,
+      name: role.name,
+      key: role.key,
+      description: role.description,
+
+      createdBy: createdByUser?.username || '',
+      createdAt: role.createdAt,
+
+      updatedBy: updatedByUser?.username || '',
+      updatedAt: role.updatedAt,
+    };
+  }
+
   private async mapRoleToResponseDto(role: Role): Promise<RoleResponseDto> {
     const createdByUsername = role.createdBy
       ? (await this.userRepo.findOne({ where: { id: role.createdBy } }))
@@ -141,6 +207,8 @@ export class RoleService {
       ? (await this.userRepo.findOne({ where: { id: role.updatedBy } }))
           ?.username || ''
       : '';
+
+    const permissions = role.rolePermissions?.map((rp) => rp.permission) || [];
 
     return Object.assign(new RoleResponseDto(), {
       id: role.id,
@@ -154,7 +222,18 @@ export class RoleService {
       updatedBy: updatedByUsername,
       updatedAt: role.updatedAt,
 
-      permissions: role.permissions || [],
+      permissions: permissions,
     });
+  }
+
+  private mapRoleToDetailDto(role: Role): RoleDetailResponseDto {
+    const permissions = role.rolePermissions?.map((rp) => rp.permission) || [];
+
+    return {
+      id: role.id,
+      name: role.name,
+      key: role.key,
+      permissions,
+    };
   }
 }

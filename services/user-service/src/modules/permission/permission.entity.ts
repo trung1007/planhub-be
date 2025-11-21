@@ -5,8 +5,10 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   ManyToMany,
+  OneToMany,
 } from 'typeorm';
 import { Role } from '../role/role.entity';
+import { RolePermission } from '../role-permission/role-permission.entity';
 
 @Entity({ name: 'permissions' })
 export class Permission {
@@ -28,8 +30,9 @@ export class Permission {
   @Column({ nullable: true })
   description: string;
 
-  @ManyToMany(() => Role, (role) => role.permissions)
-  roles: Role[];
+  // 🔥 Một Permission có nhiều RolePermission
+  @OneToMany(() => RolePermission, (rp) => rp.permission)
+  rolePermissions: RolePermission[];
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

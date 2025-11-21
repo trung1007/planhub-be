@@ -21,7 +21,6 @@ export class PermissionService {
     const skip = (page - 1) * limit;
 
     const [items, total] = await this.permissionRepository.findAndCount({
-      relations: ['roles'], // nếu bạn muốn load roles
       skip,
       take: limit,
       order: { id: 'ASC' }, // tuỳ chọn
@@ -36,7 +35,7 @@ export class PermissionService {
   }
   async getAllIds(): Promise<{ ids: number[] }> {
     const list = await this.permissionRepository.find({
-      select: ['id'], // chỉ lấy ID
+      select: ['id'],
     });
 
     return {

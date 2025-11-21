@@ -9,6 +9,7 @@ import { DevtoolsModule } from '@nestjs/devtools-integration';
 import { AuthModule } from './modules/auth/auth.module';
 import { MailerModule } from '@nestjs-modules/mailer';
 import { RouterModule } from '@nestjs/core';
+import { RolePermissionsModule } from './modules/role-permission/role-permission.module';
 
 @Module({
   imports: [
@@ -56,6 +57,10 @@ import { RouterModule } from '@nestjs/core';
         module: PermissionModule,
       },
       {
+        path: 'user-service',
+        module: RolePermissionsModule,
+      },
+      {
         path: '',
         module: AuthModule,
       },
@@ -65,6 +70,7 @@ import { RouterModule } from '@nestjs/core';
     UserModule,
     RoleModule,
     PermissionModule,
+    RolePermissionsModule,
     AuthModule,
   ],
 })
