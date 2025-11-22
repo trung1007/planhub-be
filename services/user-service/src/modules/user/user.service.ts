@@ -56,6 +56,20 @@ export class UserService {
     return user;
   }
 
+  async findList() {
+    console.log(
+      this.userRepo.find({
+        select: ['id', 'username'],
+        order: { username: 'ASC' },
+      }),
+    );
+
+    return this.userRepo.find({
+      select: ['id', 'username'],
+      order: { username: 'ASC' },
+    });
+  }
+
   async create(dto: CreateUserDto): Promise<User> {
     const createdUser = await this.userRepo.findOne({
       where: { id: dto.createdUserId },

@@ -12,8 +12,11 @@ export class HttpProxyService {
     delete headers['content-length'];
     delete headers.connection;
 
-    const cacheKey = `CACHE:${method}:${url}`;
+    const path = new URL(url).pathname;
+    const cacheKey = `CACHE:${method}:${path}`;
+    console.log('cacheKey:', cacheKey);
 
+    // GET cache
     if (method === 'GET') {
       const cached = await this.redis.get(cacheKey);
       if (cached) {
@@ -30,27 +33,40 @@ export class HttpProxyService {
       timeout: 5000,
       validateStatus: (status) => status < 400,
     });
+
     const result = {
       status: response.status,
       headers: response.headers,
       data: response.data ?? null,
     };
 
-    // 🟩 Lưu cache cho GET
+    // SET cache
     if (method === 'GET' && response.status === 200) {
-      await this.redis.set(cacheKey, JSON.stringify(result), 'EX', 30); // Cache 30s
+      await this.redis.set(cacheKey, JSON.stringify(result), 'EX', 30);
       console.log('📝 SET CACHE →', cacheKey);
     }
 
-    // 🟦 Xoá cache khi PUT/PATCH/DELETE
+    // INVALIDATE cache
     if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
-      // Xoá toàn bộ cache GET danh sách users
-      const userListPattern = `CACHE:GET:${process.env.USER_SERVICE_URL}/user-service/*`;
-      const keys = await this.redis.keys(userListPattern);
+      let pattern: string | null = null;
 
-      if (keys.length > 0) {
-        await this.redis.del(...keys);
-        console.log('🗑️ INVALIDATE USER LIST CACHE:', keys);
+      if (path.startsWith('/user-service/')) {
+        pattern = `CACHE:GET:/user-service/*`;
+      }
+
+      if (path.startsWith('/core-service/')) {
+        pattern = `CACHE:GET:/core-service/*`;
+      }
+
+      if (pattern) {
+        const keys = await this.redis.keys(pattern);
+
+        if (keys.length > 0) {
+          await this.redis.del(...keys);
+          console.log(`🗑️ INVALIDATE CACHE for ${pattern}:`, keys);
+        } else {
+          console.log(`⚠️ No cache keys matched pattern: ${pattern}`);
+        }
       }
     }
 

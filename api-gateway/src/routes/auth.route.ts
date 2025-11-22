@@ -47,8 +47,8 @@ export class AuthRoute {
 
   @All('*path')
   async handleAll(@Req() req, @Res() res) {
-    // const strippedUrl = req.originalUrl.replace('/api/v1', '');
-    const url = `${process.env.USER_SERVICE_URL}${req.originalUrl}`;
+    const strippedUrl = req.originalUrl.replace(/^\/api/, '');
+    const url = `${process.env.USER_SERVICE_URL}${strippedUrl}`;
     const method = req.method;
     const body = req.body;
     const headers = req.headers;
@@ -57,7 +57,7 @@ export class AuthRoute {
 
     try {
       const result = await this.proxy.forward(method, url, body, headers);
-       return res.status(result.status).json(result.data);
+      return res.status(result.status).json(result.data);
     } catch (err) {
       console.log('❌ ERROR:', err.message);
       const status = err.response?.status || 500;

@@ -28,18 +28,29 @@ export class JwtAuthGuard implements CanActivate {
     const token = authHeader.split(' ')[1];
     if (!token) throw new UnauthorizedException('Invalid Bearer token');
 
-    try {
-      const secret = process.env.JWT_SECRET;
-      if (!secret) {
-        throw new Error('JWT_SECRET is not defined');
+    const serviceSecret = process.env.SERVICE_JWT_SECRET;
+    if (!serviceSecret)
+      throw new UnauthorizedException('SERVICE_JWT_SECRET missing');
+
+    for (let i = 0; i < 3; i++) {
+      try {
+        const decoded: any = jwt.verify(token, serviceSecret);
+        if (decoded && decoded.type === 'service') {
+          req.service = decoded.service;
+          return true;
+        }
+      } catch (_) {
+        // thử verify lại
       }
+    }
 
-      const decoded = jwt.verify(token, secret);
-
-      req.user = decoded;
+    const userSecret = process.env.JWT_SECRET;
+    if (!userSecret) throw new UnauthorizedException('JWT_SECRET missing');
+    try {
+      const userDecoded: any = jwt.verify(token, userSecret);
+      req.user = userDecoded;
       return true;
     } catch (err) {
-      // ⚠️ Token hết hạn
       if (err instanceof jwt.TokenExpiredError) {
         throw new UnauthorizedException('Access token expired');
       }

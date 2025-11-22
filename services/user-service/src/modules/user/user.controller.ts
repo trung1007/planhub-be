@@ -22,7 +22,10 @@ export class UserController {
   async getAll(@Query('page') page?: number, @Query('limit') limit?: number) {
     return this.userService.findAll(page, limit);
   }
-
+  @Get('user-list')
+  async getList() {
+    return this.userService.findList();
+  }
   @Get(':id')
   async getOne(@Param('id') id: number) {
     return this.userService.findOne(id);

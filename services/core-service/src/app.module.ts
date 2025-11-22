@@ -1,10 +1,38 @@
 import { Module } from '@nestjs/common';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
+import { ConfigModule } from '@nestjs/config';
+import { RouterModule } from '@nestjs/core';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { ProjectModule } from './modules/project/project.module';
+import { ProjectMemberModule } from './modules/project-member/project-member.module';
+import { ReleaseModule } from './modules/release/release.module';
+import { WorkflowModule } from './modules/workflow/workflow.module';
 
 @Module({
-  imports: [],
-  controllers: [AppController],
-  providers: [AppService],
+  imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
+    TypeOrmModule.forRoot({
+      type: 'postgres',
+      host: process.env.DB_HOST,
+      port: parseInt(process.env.DB_PORT!, 10),
+      username: process.env.DB_USER,
+      password: process.env.DB_PASS,
+      database: process.env.DB_NAME,
+      autoLoadEntities: true,
+      synchronize: true,
+    }),
+    RouterModule.register([
+      {
+        path: 'core-service',
+        module: ProjectModule,
+      },
+    ]),
+    
+    ProjectModule, 
+    ProjectMemberModule,
+    ReleaseModule,
+    WorkflowModule
+  ],
 })
 export class AppModule {}

@@ -69,7 +69,13 @@ export class RoleService {
       totalPages: Math.ceil(total / limitNumber),
     };
   }
-
+  async findList() {
+    return this.roleRepository.find({
+      select: ['id', 'key'],
+      order: { key: 'ASC' },
+    });
+  }
+  
   async findOne(id: number): Promise<RoleDetailResponseDto> {
     const role = await this.roleRepository
       .createQueryBuilder('role')
