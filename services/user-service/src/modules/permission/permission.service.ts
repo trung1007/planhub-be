@@ -23,7 +23,7 @@ export class PermissionService {
     const [items, total] = await this.permissionRepository.findAndCount({
       skip,
       take: limit,
-      order: { id: 'ASC' }, // tuỳ chọn
+      order: { id: 'ASC' },
     });
 
     return {
@@ -44,16 +44,17 @@ export class PermissionService {
   }
 
   async findOne(id: number): Promise<Permission> {
-    const permission = await this.permissionRepository.findOne({
-      where: { id },
-      relations: ['roles'],
-    });
+    // const permission = await this.permissionRepository.findOne({
+    //   where: { id },
+    //   relations: ['roles'],
+    // });
 
-    if (!permission) {
-      throw new NotFoundException(`Permission #${id} not found`);
-    }
+    // if (!permission) {
+    //   throw new NotFoundException(`Permission #${id} not found`);
+    // }
 
-    return permission;
+    // return permission;
+    return new Permission();
   }
 
   async update(id: number, dto: UpdatePermissionDto): Promise<Permission> {

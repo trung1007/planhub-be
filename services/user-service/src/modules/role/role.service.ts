@@ -12,8 +12,6 @@ import { Permission } from '../permission/permission.entity';
 import { CreateRoleDto } from './dto/create-role.dto';
 import { UpdateRoleDto } from './dto/update-role.dto';
 import { User } from '../user/user.entity';
-import { RoleResponseDto } from './dto/role-response.dto';
-import { RoleListResponseDto } from './dto/role-list-response.dto';
 import { RoleDetailResponseDto } from './dto/role-detail-response.dto';
 
 @Injectable()
@@ -33,16 +31,35 @@ export class RoleService {
     const pageNumber = Math.max(1, Number(page) || 1);
     const limitNumber = Math.max(1, Number(limit) || 10);
 
-    // Query lấy dữ liệu + đếm tổng
-    const [roles, total] = await this.roleRepository.findAndCount({
-      skip: (pageNumber - 1) * limitNumber,
-      take: limitNumber,
-      order: { id: 'ASC' },
-    });
+    const qb = this.roleRepository
+      .createQueryBuilder('role')
+      .leftJoin(User, 'createdByUser', 'createdByUser.id = role.created_by')
+      .addSelect(['createdByUser.id', 'createdByUser.username'])
+      .leftJoin(User, 'updatedByUser', 'updatedByUser.id = role.updated_by')
+      .addSelect(['updatedByUser.id', 'updatedByUser.username'])
+      .skip((pageNumber - 1) * limitNumber)
+      .take(limitNumber)
+      .orderBy('role.id', 'ASC');
 
-    const items = await Promise.all(
-      roles.map((role) => this.mapRoleToResponseDto(role)),
-    );
+    const rolesRaw = await qb.getRawMany();
+    const total = await qb.getCount();
+
+    const items = rolesRaw.map((raw) => {
+      // Tạo Role entity đúng
+      const roleEntity = new Role();
+      Object.assign(roleEntity, {
+        id: raw.role_id,
+        name: raw.role_name,
+        key: raw.role_key,
+        description: raw.role_description,
+        createdAt: raw.role_created_at,
+        updatedAt: raw.role_updated_at,
+        createdBy: raw.createdByUser_username,
+        updatedBy: raw.updatedByUser_username,
+      });
+
+      return roleEntity;
+    });
 
     return {
       items,
@@ -52,55 +69,6 @@ export class RoleService {
       totalPages: Math.ceil(total / limitNumber),
     };
   }
-
-  // async findAll(page = 1, limit = 10) {
-  //   const pageNumber = Math.max(1, Number(page) || 1);
-  //   const limitNumber = Math.max(1, Number(limit) || 10);
-
-  //   const qb = this.roleRepository
-  //     .createQueryBuilder('role')
-  //     .leftJoinAndSelect(
-  //       'users',
-  //       'createdByUser',
-  //       'createdByUser.id = role.created_by',
-  //     )
-  //     .leftJoinAndSelect(
-  //       'users',
-  //       'updatedByUser',
-  //       'updatedByUser.id = role.updated_by',
-  //     )
-  //     .skip((pageNumber - 1) * limitNumber)
-  //     .take(limitNumber)
-  //     .orderBy('role.id', 'ASC');
-
-  //   const [roles, total] = await qb.getManyAndCount();
-
-  //   const items = roles.map((role) =>
-  //     this.mapRoleToListDto(
-  //       role,
-  //       (role as any).createdByUser,
-  //       (role as any).updatedByUser,
-  //     ),
-  //   );
-
-  //   return {
-  //     items,
-  //     total,
-  //     page: pageNumber,
-  //     limit: limitNumber,
-  //     totalPages: Math.ceil(total / limitNumber),
-  //   };
-  // }
-
-  // async findOne(id: number) {
-  //   const role = await this.roleRepository.findOne({
-  //     where: { id },
-  //     relations: ['rolePermissions', 'rolePermissions.permission'],
-  //   });
-
-  //   if (!role) throw new NotFoundException('Role not found');
-  //   return role;
-  // }
 
   async findOne(id: number): Promise<RoleDetailResponseDto> {
     const role = await this.roleRepository
@@ -136,18 +104,15 @@ export class RoleService {
   }
 
   async update(id: number, dto: UpdateRoleDto) {
-    // 1. Tìm role
     const role = await this.roleRepository.findOne({ where: { id } });
     if (!role) throw new NotFoundException(`Role ${id} not found`);
 
-    // 2. Kiểm tra user cập nhật
     const updatedUser = await this.userRepo.findOne({
       where: { id: dto.updatedUserId },
     });
     if (!updatedUser)
       throw new NotFoundException(`User ${dto.updatedUserId} not found`);
 
-    // 3. Nếu gửi lên key mới → check key có bị trùng
     if (dto.key && dto.key !== role.key) {
       const existingRole = await this.roleRepository.findOne({
         where: { key: dto.key },
@@ -160,13 +125,10 @@ export class RoleService {
       }
     }
 
-    // 4. Gán dữ liệu
     Object.assign(role, dto);
 
-    // 5. Gán người cập nhật
     role.updatedBy = dto.updatedUserId;
 
-    // 6. Lưu lại
     return this.roleRepository.save(role);
   }
 
@@ -176,54 +138,6 @@ export class RoleService {
 
     await this.roleRepository.delete(id);
     return { message: 'Role deleted successfully' };
-  }
-
-  private mapRoleToListDto(
-    role: Role,
-    createdByUser?: User,
-    updatedByUser?: User,
-  ): RoleListResponseDto {
-    return {
-      id: role.id,
-      name: role.name,
-      key: role.key,
-      description: role.description,
-
-      createdBy: createdByUser?.username || '',
-      createdAt: role.createdAt,
-
-      updatedBy: updatedByUser?.username || '',
-      updatedAt: role.updatedAt,
-    };
-  }
-
-  private async mapRoleToResponseDto(role: Role): Promise<RoleResponseDto> {
-    const createdByUsername = role.createdBy
-      ? (await this.userRepo.findOne({ where: { id: role.createdBy } }))
-          ?.username || ''
-      : '';
-
-    const updatedByUsername = role.updatedBy
-      ? (await this.userRepo.findOne({ where: { id: role.updatedBy } }))
-          ?.username || ''
-      : '';
-
-    const permissions = role.rolePermissions?.map((rp) => rp.permission) || [];
-
-    return Object.assign(new RoleResponseDto(), {
-      id: role.id,
-      name: role.name,
-      key: role.key,
-      description: role.description,
-
-      createdBy: createdByUsername,
-      createdAt: role.createdAt,
-
-      updatedBy: updatedByUsername,
-      updatedAt: role.updatedAt,
-
-      permissions: permissions,
-    });
   }
 
   private mapRoleToDetailDto(role: Role): RoleDetailResponseDto {
