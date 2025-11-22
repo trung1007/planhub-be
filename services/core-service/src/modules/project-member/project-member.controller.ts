@@ -9,6 +9,7 @@ import {
   Query,
 } from '@nestjs/common';
 import { ProjectMemberService } from './project-member.service';
+import { CreateProjectMemberDto } from './dto/create-project-member.dto';
 
 @Controller('project-members')
 export class ProjectMemberController {
@@ -16,7 +17,7 @@ export class ProjectMemberController {
 
   /** ===================== CREATE ===================== */
   @Post()
-  create(@Body() dto: any) {
+  create(@Body() dto: CreateProjectMemberDto) {
     return this.service.create(dto);
   }
 

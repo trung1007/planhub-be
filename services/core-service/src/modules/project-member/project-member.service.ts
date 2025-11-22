@@ -1,9 +1,14 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ProjectMember } from './project-member.entity';
 import { ProjectMemberListDto } from './dto/project-member-list.dto';
 import { UserServiceProxy } from 'src/shared/user-service.proxy';
+import { CreateProjectMemberDto } from './dto/create-project-member.dto';
 
 @Injectable()
 export class ProjectMemberService {
@@ -14,8 +19,25 @@ export class ProjectMemberService {
   ) {}
 
   /** ===================== CREATE ===================== */
-  async create(dto: any) {
-    const member = this.memberRepo.create(dto);
+  async create(dto: CreateProjectMemberDto) {
+    const [day, month, year] = dto.joinDate.split('-');
+
+    const joinDate = new Date(Number(year), Number(month) - 1, Number(day));
+
+    if (isNaN(joinDate.getTime())) {
+      throw new BadRequestException(
+        'Invalid joinDate format. Expect DD-MM-YYYY.',
+      );
+    }
+
+    const member = this.memberRepo.create({
+      project_id: dto.projectId,
+      user_id: dto.userId,
+      role_id: dto.roleId,
+      join_date: joinDate,
+      created_by: dto.createdId,
+    });
+
     return await this.memberRepo.save(member);
   }
 
@@ -28,29 +50,31 @@ export class ProjectMemberService {
       relations: ['project'],
       skip,
       take: limit,
-      order: { id: 'DESC' },
+      order: { project_id: 'ASC' },
     });
 
     // Gắn thêm thông tin user từ user-service
-    const data: ProjectMemberListDto[] = [];
+    const items: ProjectMemberListDto[] = [];
 
     for (const m of members) {
       const user = await this.userProxy.getUserById(m.user_id);
-
-      data.push({
+      const role = await this.userProxy.getRoleById(m.role_id);
+      const createdUser = await this.userProxy.getUserById(m.created_by);
+      items.push({
         id: m.id,
         projectName: m.project?.name ?? null,
-        fullName: user.full_name,
+        fullName: user.fullName,
         username: user.username,
-        phoneNumber: user.phone_number,
+        phoneNumber: user.phoneNumber,
         email: user.email,
-        role: m.role,
-        joinDate: m.created_at,
+        role: role.key,
+        joinDate: m.join_date,
+        createdBy: createdUser.username,
       });
     }
 
     return {
-      data,
+      items,
       total,
       page,
       limit,

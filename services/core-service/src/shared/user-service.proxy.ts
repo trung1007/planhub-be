@@ -29,4 +29,21 @@ export class UserServiceProxy {
       return null;
     }
   }
+
+  async getRoleById(id: number) {
+    try {
+      const token = this.tokenManager.getToken();
+      const response = await firstValueFrom(
+        this.http.get(`${this.gatewayUrl}/user-service/roles/${id}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }),
+      );
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching user:', error?.message);
+      return null;
+    }
+  }
 }

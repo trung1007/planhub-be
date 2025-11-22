@@ -27,6 +27,10 @@ import { WorkflowModule } from './modules/workflow/workflow.module';
         path: 'core-service',
         module: ProjectModule,
       },
+      {
+        path: 'core-service',
+        module: ProjectMemberModule,
+      },
     ]),
     
     ProjectModule, 

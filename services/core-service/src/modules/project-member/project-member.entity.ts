@@ -5,6 +5,7 @@ import {
   ManyToOne,
   CreateDateColumn,
   UpdateDateColumn,
+  JoinColumn,
 } from 'typeorm';
 import { Project } from '../project/project.entity';
 
@@ -19,11 +20,14 @@ export class ProjectMember {
   @Column()
   user_id: number;
 
-  @Column({ length: 50 })
-  role: string;
+  @Column()
+  role_id: number;
 
   @Column()
   created_by: number;
+
+  @Column()
+  join_date:Date;
 
   @CreateDateColumn()
   created_at: Date;
@@ -34,6 +38,7 @@ export class ProjectMember {
   // ============= Relations =============
 
   @ManyToOne(() => Project, (p) => p.members, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: "project_id" }) 
   project: Project;
 
 }
