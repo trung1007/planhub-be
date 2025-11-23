@@ -9,7 +9,7 @@ import {
   Query,
 } from '@nestjs/common';
 import { ProjectMemberService } from './project-member.service';
-import { CreateProjectMemberDto } from './dto/create-project-member.dto';
+import { ActionProjectMemberDto } from './dto/create-project-member.dto';
 
 @Controller('project-members')
 export class ProjectMemberController {
@@ -17,7 +17,7 @@ export class ProjectMemberController {
 
   /** ===================== CREATE ===================== */
   @Post()
-  create(@Body() dto: CreateProjectMemberDto) {
+  create(@Body() dto: ActionProjectMemberDto) {
     return this.service.create(dto);
   }
 
@@ -35,7 +35,7 @@ export class ProjectMemberController {
 
   /** ===================== UPDATE ===================== */
   @Patch(':id')
-  update(@Param('id') id: number, @Body() dto: any) {
+  update(@Param('id') id: number, @Body() dto: ActionProjectMemberDto) {
     return this.service.update(Number(id), dto);
   }
 

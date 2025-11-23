@@ -1,6 +1,6 @@
 import { IsNotEmpty, IsInt, IsString } from 'class-validator';
 
-export class CreateProjectMemberDto {
+export class ActionProjectMemberDto {
   @IsNotEmpty()
   @IsInt()
   userId: number;

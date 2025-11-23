@@ -8,7 +8,7 @@ import { Repository } from 'typeorm';
 import { ProjectMember } from './project-member.entity';
 import { ProjectMemberListDto } from './dto/project-member-list.dto';
 import { UserServiceProxy } from 'src/shared/user-service.proxy';
-import { CreateProjectMemberDto } from './dto/create-project-member.dto';
+import { ActionProjectMemberDto } from './dto/create-project-member.dto';
 
 @Injectable()
 export class ProjectMemberService {
@@ -19,7 +19,7 @@ export class ProjectMemberService {
   ) {}
 
   /** ===================== CREATE ===================== */
-  async create(dto: CreateProjectMemberDto) {
+  async create(dto: ActionProjectMemberDto) {
     const [day, month, year] = dto.joinDate.split('-');
 
     const joinDate = new Date(Number(year), Number(month) - 1, Number(day));
@@ -63,11 +63,14 @@ export class ProjectMemberService {
       items.push({
         id: m.id,
         projectName: m.project?.name ?? null,
+        projectId: m.project_id,
         fullName: user.fullName,
         username: user.username,
+        userId: m.user_id,
         phoneNumber: user.phoneNumber,
         email: user.email,
         role: role.key,
+        roleId: m.role_id,
         joinDate: m.join_date,
         createdBy: createdUser.username,
       });
@@ -94,9 +97,24 @@ export class ProjectMemberService {
   }
 
   /** ===================== UPDATE ===================== */
-  async update(id: number, dto: any) {
+  async update(id: number, dto: ActionProjectMemberDto) {
+    const [day, month, year] = dto.joinDate.split('-');
+
+    const joinDate = new Date(Number(year), Number(month) - 1, Number(day));
+
+    if (isNaN(joinDate.getTime())) {
+      throw new BadRequestException(
+        'Invalid joinDate format. Expect DD-MM-YYYY.',
+      );
+    }
     const member = await this.findOne(id);
-    Object.assign(member, dto);
+    Object.assign(member, {
+      project_id: dto.projectId,
+      user_id: dto.userId,
+      role_id: dto.roleId,
+      created_by: dto.createdId,
+      join_date: joinDate,
+    });
     return await this.memberRepo.save(member);
   }
 
