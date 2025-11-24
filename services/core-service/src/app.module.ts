@@ -7,6 +7,7 @@ import { ProjectMemberModule } from './modules/project-member/project-member.mod
 import { ReleaseModule } from './modules/release/release.module';
 import { WorkflowModule } from './modules/workflow/workflow.module';
 import { SprintModule } from './modules/sprint/sprint.module';
+import { IssueModule } from './modules/issue/issue.module';
 
 @Module({
   imports: [
@@ -32,17 +33,22 @@ import { SprintModule } from './modules/sprint/sprint.module';
         path: 'core-service',
         module: ProjectMemberModule,
       },
-        {
+      {
         path: 'core-service',
         module: ReleaseModule,
       },
+      {
+        path: 'core-service',
+        module: SprintModule,
+      },
     ]),
-    
-    ProjectModule, 
+
+    ProjectModule,
     ProjectMemberModule,
     ReleaseModule,
     SprintModule,
-    WorkflowModule
+    IssueModule,
+    WorkflowModule,
   ],
 })
 export class AppModule {}
