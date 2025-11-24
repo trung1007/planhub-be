@@ -6,8 +6,16 @@ import {
   UpdateDateColumn,
   ManyToOne,
   JoinColumn,
+  OneToMany,
 } from 'typeorm';
 import { Sprint } from '../sprint/sprint.entity';
+import { Attachment } from '../attachment/attachment.entity';
+import { Subtask } from '../subtask/subtask.entity';
+import { Comment } from '../comment/comment.entity';
+import { IssueStatus } from 'src/enum/issue-status.enum';
+import { IssuePriority } from 'src/enum/issue-priority.enum';
+import { TagEnum } from 'src/enum/issue-tag.enum';
+import { IssueType } from 'src/enum/issu-type.enum';
 
 @Entity({ name: 'issue' })
 export class Issue {
@@ -17,8 +25,12 @@ export class Issue {
   @Column({ name: 'sprint_id', type: 'int', nullable: true })
   sprint_id: number | null;
 
-  @Column({ type: 'varchar', length: 50 })
-  type: string;
+  @Column({
+    type: 'enum',
+    enum: IssueType,
+    nullable: true,
+  })
+  type: IssueType | null;
 
   @Column({ type: 'varchar', length: 255 })
   name: string;
@@ -29,11 +41,27 @@ export class Issue {
   @Column({ type: 'text', nullable: true })
   description: string | null;
 
-  @Column({ type: 'varchar', length: 50, nullable: true })
-  stage: string | null;
+  @Column({
+    type: 'enum',
+    enum: TagEnum,
+    array: true,
+    nullable: true,
+  })
+  tags: TagEnum[] | null;
 
-  @Column({ type: 'varchar', length: 255, nullable: true })
-  resolution: string | null;
+  @Column({
+    type: 'enum',
+    enum: IssueStatus,
+    nullable: true,
+  })
+  status: IssueStatus | null;
+
+  @Column({
+    type: 'enum',
+    enum: IssuePriority,
+    nullable: true,
+  })
+  priority: IssuePriority | null;
 
   @Column({ name: 'reporter_id', type: 'int', nullable: true })
   reporter_id: number | null;
@@ -53,4 +81,13 @@ export class Issue {
   @ManyToOne(() => Sprint, (p) => p.issues, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'sprint_id' })
   sprint: Sprint;
+
+  @OneToMany(() => Attachment, (a) => a.issue)
+  attachments: Attachment[];
+
+  @OneToMany(() => Comment, (c) => c.issue)
+  comments: Comment[];
+
+  @OneToMany(() => Subtask, (s) => s.issue)
+  subtasks: Subtask[];
 }

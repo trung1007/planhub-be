@@ -2,7 +2,7 @@
 
 export class SprintListDto {
   id: number;
-  releaseName: string;
+  releaseName: string | null;
   releaseId: number;
   name: string;
   key:string;

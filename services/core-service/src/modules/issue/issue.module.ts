@@ -1,11 +1,18 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Issue } from './issue.entity';
+import { Attachment } from '../attachment/attachment.entity';
+import { Comment } from '../comment/comment.entity';
+import { Subtask } from '../subtask/subtask.entity';
+import { IssueController } from './issue.controller';
+import { IssueService } from './issue.service';
+import { SharedModule } from 'src/shared/shared.module';
+import { Sprint } from '../sprint/sprint.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Issue])],
-//   controllers: [SprintController],
-//   providers: [SprintService],
-//   exports: [ReleaseService],
+  imports: [TypeOrmModule.forFeature([Issue, Attachment, Comment, Subtask, Sprint]), SharedModule],
+    controllers: [IssueController],
+    providers: [IssueService],
+    exports: [IssueService],
 })
 export class IssueModule {}

@@ -4,7 +4,7 @@ import { Repository } from 'typeorm';
 import { Release } from './release.entity';
 import { ActionReleaseDto } from './dto/action-release.dto';
 import { Project } from '../project/project.entity';
-import { ReleaseStatus } from './enum/release-status.enum';
+import { ReleaseStatus } from '../../enum/release-status.enum';
 import { formatDate } from 'src/utils/formatDate';
 
 @Injectable()

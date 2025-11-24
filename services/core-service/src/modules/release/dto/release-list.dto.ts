@@ -1,4 +1,4 @@
-import { ReleaseStatus } from '../enum/release-status.enum';
+import { ReleaseStatus } from '../../../enum/release-status.enum';
 
 export class ReleaseListDto {
   id: number;

@@ -10,7 +10,7 @@ import {
 } from 'typeorm';
 import { Project } from '../project/project.entity';
 import { Sprint } from '../sprint/sprint.entity';
-import { ReleaseStatus } from './enum/release-status.enum';
+import { ReleaseStatus } from '../../enum/release-status.enum';
 
 @Entity('release')
 export class Release {

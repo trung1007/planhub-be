@@ -1,4 +1,8 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { formatDate } from 'src/utils/formatDate';
@@ -6,7 +10,6 @@ import { Sprint } from './sprint.entity';
 import { ActionSprintDto } from './dto/action-sprint.dto';
 import { Release } from '../release/release.entity';
 import { SprintListDto } from './dto/sprint-list.dto';
-
 @Injectable()
 export class SprintService {
   constructor(
@@ -15,6 +18,7 @@ export class SprintService {
 
     @InjectRepository(Release)
     private readonly releaseRepo: Repository<Release>,
+
   ) {}
 
   async create(dto: ActionSprintDto) {
@@ -69,7 +73,7 @@ export class SprintService {
       order: { release_id: 'ASC' },
     });
 
-    const items = data.map((s) => ({
+    const items: SprintListDto[] = data.map((s) => ({
       id: s.id,
       releaseName: s.release?.name || null,
       releaseId: s.release_id,
@@ -92,6 +96,14 @@ export class SprintService {
   async findList() {
     return this.sprintRepo.find({
       select: ['id', 'name'],
+      order: { name: 'ASC' },
+    });
+  }
+
+  async findActiveSprint() {
+    return this.sprintRepo.find({
+      select: ['id', 'is_active', 'name'],
+      where: { is_active: true },
       order: { name: 'ASC' },
     });
   }
@@ -120,7 +132,6 @@ export class SprintService {
       throw new BadRequestException(`Release ${dto.releaseId} not found`);
     }
 
-    // 3. Check trùng name + key trong cùng release (ngoại trừ chính nó)
     const exists = await this.sprintRepo.findOne({
       where: {
         release_id: dto.releaseId,
@@ -141,15 +152,14 @@ export class SprintService {
         'Start date cannot be greater than end date',
       );
     }
-
-    // 5. Gán lại dữ liệu cho sprint
-    sprint.name = dto.name;
-    sprint.key = dto.key;
-    sprint.release_id = dto.releaseId;
-    sprint.is_active = dto.isActive;
-    sprint.start_date = formatDate(dto.startDate);
-    sprint.end_date = formatDate(dto.endDate);
-    sprint.created_by = dto.createdId;
+    Object.assign(sprint, {
+      ...dto,
+      release_id: dto.releaseId,
+      is_active: dto.isActive,
+      start_date: formatDate(dto.startDate),
+      end_date: formatDate(dto.endDate),
+      created_by: dto.createdId,
+    });
 
     return await this.sprintRepo.save(sprint);
   }

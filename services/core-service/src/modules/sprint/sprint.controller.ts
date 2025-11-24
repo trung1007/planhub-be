@@ -12,7 +12,6 @@ import {
 
 import { SprintService } from './sprint.service';
 import { ActionSprintDto } from './dto/action-sprint.dto';
-
 @Controller('sprints')
 export class SprintController {
   constructor(private readonly sprintService: SprintService) {}
@@ -33,6 +32,11 @@ export class SprintController {
   @Get('sprint-list')
   findList() {
     return this.sprintService.findList();
+  }
+
+  @Get('active-sprints')
+  findActiveSprint() {
+    return this.sprintService.findActiveSprint();
   }
 
   @Get(':id')

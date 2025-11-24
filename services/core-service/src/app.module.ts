@@ -24,24 +24,28 @@ import { IssueModule } from './modules/issue/issue.module';
       autoLoadEntities: true,
       synchronize: true,
     }),
-    RouterModule.register([
-      {
-        path: 'core-service',
-        module: ProjectModule,
-      },
-      {
-        path: 'core-service',
-        module: ProjectMemberModule,
-      },
-      {
-        path: 'core-service',
-        module: ReleaseModule,
-      },
-      {
-        path: 'core-service',
-        module: SprintModule,
-      },
-    ]),
+    // RouterModule.register([
+    //   {
+    //     path: 'core-service',
+    //     module: ProjectModule,
+    //   },
+    //   {
+    //     path: 'core-service',
+    //     module: ProjectMemberModule,
+    //   },
+    //   {
+    //     path: 'core-service',
+    //     module: ReleaseModule,
+    //   },
+    //   {
+    //     path: 'core-service',
+    //     module: SprintModule,
+    //   },
+    //   {
+    //     path: 'core-service',
+    //     module: IssueModule,
+    //   },
+    // ]),
 
     ProjectModule,
     ProjectMemberModule,

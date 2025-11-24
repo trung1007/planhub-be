@@ -7,7 +7,7 @@ import {
   IsOptional,
   IsEnum,
 } from 'class-validator';
-import { ReleaseStatus } from '../enum/release-status.enum';
+import { ReleaseStatus } from '../../../enum/release-status.enum';
 
 export class ActionReleaseDto {
   @IsNotEmpty()
