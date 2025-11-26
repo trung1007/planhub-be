@@ -8,9 +8,11 @@ import { IssueController } from './issue.controller';
 import { IssueService } from './issue.service';
 import { SharedModule } from 'src/shared/shared.module';
 import { Sprint } from '../sprint/sprint.entity';
+import { Release } from '../release/release.entity';
+import { Project } from '../project/project.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Issue, Attachment, Comment, Subtask, Sprint]), SharedModule],
+  imports: [TypeOrmModule.forFeature([Issue, Attachment, Comment, Subtask, Sprint, Project, Release]), SharedModule],
     controllers: [IssueController],
     providers: [IssueService],
     exports: [IssueService],

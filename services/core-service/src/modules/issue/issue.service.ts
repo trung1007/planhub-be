@@ -12,6 +12,8 @@ import { UserServiceProxy } from 'src/shared/user-service.proxy';
 import { IssueListDTO } from './dto/issue-list.dto';
 import { AssignIssuesToSprintDto } from './dto/add-issue-to-sprint.dto';
 import { Sprint } from '../sprint/sprint.entity';
+import { Release } from '../release/release.entity';
+import { Project } from '../project/project.entity';
 
 @Injectable()
 export class IssueService {
@@ -21,6 +23,10 @@ export class IssueService {
     private readonly userProxy: UserServiceProxy,
     @InjectRepository(Sprint)
     private readonly sprintRepo: Repository<Sprint>,
+    @InjectRepository(Release)
+    private readonly releaseRepo: Repository<Release>,
+    @InjectRepository(Project)
+    private readonly projectRepo: Repository<Project>,
   ) {}
 
   async findAll(page: number = 1, limit: number = 10) {
@@ -95,12 +101,46 @@ export class IssueService {
   async findOne(id: number) {
     const issue = await this.issueRepo.findOne({
       where: { id },
-      relations: ['attachments', 'comments', 'subtasks', 'sprint'],
+      relations: ['sprint'],
     });
 
     if (!issue) throw new NotFoundException('Issue not found');
 
-    return issue;
+    const assignee = issue.assignee_id
+      ? await this.userProxy.getUserById(issue.assignee_id)
+      : null;
+
+    const reporter = issue.reporter_id
+      ? await this.userProxy.getUserById(issue.reporter_id)
+      : null;
+
+    const release = issue.sprint.release_id
+      ? await this.releaseRepo.findOne({
+          where: { id: issue.sprint.release_id },
+        })
+      : null;
+
+    const project = release?.project_id
+      ? await this.projectRepo.findOne({ where: { id: release.project_id } })
+      : null;
+
+    const issueResponse = {
+      ...issue,
+      assigneeId: issue.assignee_id,
+      assigneeName: assignee?.username || null,
+      createdAt: issue.created_at,
+      updatedAt: issue.updated_at,
+
+      reporterId: issue.reporter_id,
+      reporterName: reporter?.username || null,
+
+      sprintId: issue.sprint?.id || null,
+      sprintName: issue.sprint?.name || null,
+      releaseName: release?.name,
+      projectName: project?.name,
+    };
+
+    return issueResponse;
   }
 
   async getAllIds(): Promise<{ ids: number[] }> {
