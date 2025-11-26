@@ -8,6 +8,7 @@ import { ReleaseModule } from './modules/release/release.module';
 import { WorkflowModule } from './modules/workflow/workflow.module';
 import { SprintModule } from './modules/sprint/sprint.module';
 import { IssueModule } from './modules/issue/issue.module';
+import { AttachmentModule } from './modules/attachment/attachment.module';
 
 @Module({
   imports: [
@@ -52,6 +53,7 @@ import { IssueModule } from './modules/issue/issue.module';
     ReleaseModule,
     SprintModule,
     IssueModule,
+    AttachmentModule,
     WorkflowModule,
   ],
 })

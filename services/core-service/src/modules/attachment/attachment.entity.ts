@@ -18,7 +18,13 @@ export class Attachment {
   issue_id: number;
 
   @Column({ type: 'varchar', length: 255 })
-  file: string;
+  file_name: string; // Lưu tên file
+
+  @Column({ type: 'bytea' })
+  file_data: Buffer; // Lưu trữ dữ liệu file nhị phân
+
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  mime_type: string | null;
 
   @CreateDateColumn({ name: 'created_at' })
   created_at: Date;
