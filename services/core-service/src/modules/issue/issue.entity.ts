@@ -10,7 +10,6 @@ import {
 } from 'typeorm';
 import { Sprint } from '../sprint/sprint.entity';
 import { Attachment } from '../attachment/attachment.entity';
-import { Subtask } from '../subtask/subtask.entity';
 import { Comment } from '../comment/comment.entity';
 import { IssueStatus } from 'src/enum/issue-status.enum';
 import { IssuePriority } from 'src/enum/issue-priority.enum';
@@ -31,6 +30,19 @@ export class Issue {
     nullable: true,
   })
   type: IssueType | null;
+
+  // 🔥 NEW: issue cha (nếu là sub-task)
+  @Column({ name: 'parent_issue_id', type: 'int', nullable: true })
+  parent_issue_id: number | null;
+
+  // issue con -> issue cha
+  @ManyToOne(() => Issue, (issue) => issue.subtasks, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'parent_issue_id' })
+  parent: Issue | null;
+
+  // issue cha -> danh sách sub-task
+  @OneToMany(() => Issue, (issue) => issue.parent)
+  subtasks: Issue[];
 
   @Column({ type: 'varchar', length: 255 })
   name: string;
@@ -87,7 +99,4 @@ export class Issue {
 
   @OneToMany(() => Comment, (c) => c.issue)
   comments: Comment[];
-
-  @OneToMany(() => Subtask, (s) => s.issue)
-  subtasks: Subtask[];
 }

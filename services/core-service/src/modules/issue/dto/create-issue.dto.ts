@@ -20,6 +20,11 @@ export class CreateIssueDto {
   @IsNotEmpty()
   type: IssueType;
 
+  // 🔥 nếu là SUBTASK thì FE gửi parentIssueId
+  @IsOptional()
+  @IsInt()
+  parentIssueId?: number;
+
   @IsString()
   @IsNotEmpty()
   name: string;

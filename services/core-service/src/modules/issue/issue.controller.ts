@@ -27,6 +27,24 @@ export class IssueController {
     return this.issueService.getAllIds();
   }
 
+  @Get('issue-list')
+  getIssueList() {
+    return this.issueService.getListIssue();
+  }
+
+  @Get(':id/subtasks')
+  findSubtasks(
+    @Param('id') id: string,
+    @Query('page') page: string = '1',
+    @Query('limit') limit: string = '10',
+  ) {
+    const parentId = Number(id);
+    const pageNumber = Number(page) || 1;
+    const limitNumber = Number(limit) || 10;
+
+    return this.issueService.findSubtasks(parentId, pageNumber, limitNumber);
+  }
+
   @Get(':id')
   findOne(@Param('id') id: number) {
     return this.issueService.findOne(id);

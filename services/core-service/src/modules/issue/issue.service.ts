@@ -4,7 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, Repository } from 'typeorm';
+import { In, IsNull, Repository } from 'typeorm';
 import { Issue } from './issue.entity';
 import { CreateIssueDto } from './dto/create-issue.dto';
 import { UpdateIssueDto } from './dto/update-issue.dto';
@@ -48,6 +48,9 @@ export class IssueService {
         },
         assignee_id: true,
         reporter_id: true,
+      },
+      where: {
+        parent_issue_id: IsNull(), // 🔥 chỉ lấy issue top-level
       },
       relations: ['sprint'],
       skip,
@@ -101,7 +104,7 @@ export class IssueService {
   async findOne(id: number) {
     const issue = await this.issueRepo.findOne({
       where: { id },
-      relations: ['sprint'],
+      relations: ['sprint', 'subtasks', 'parent'],
     });
 
     if (!issue) throw new NotFoundException('Issue not found');
@@ -138,9 +141,96 @@ export class IssueService {
       sprintName: issue.sprint?.name || null,
       releaseName: release?.name,
       projectName: project?.name,
+
+      parentIssueId: issue.parent_issue_id,
+      parentIssueName: issue.parent?.name ?? null,
+
+      subtasks:
+        issue.subtasks?.map((s) => ({
+          id: s.id,
+          name: s.name,
+          summary: s.summary,
+          status: s.status,
+          priority: s.priority,
+          assigneeId: s.assignee_id,
+        })) ?? [],
     };
 
     return issueResponse;
+  }
+
+  async findSubtasks(parentId: number, page: number = 1, limit: number = 10) {
+    const parent = await this.issueRepo.findOne({ where: { id: parentId } });
+    if (!parent) {
+      throw new NotFoundException('Parent issue not found');
+    }
+
+    const skip = (page - 1) * limit;
+
+    const [subtasks, total] = await this.issueRepo.findAndCount({
+      where: { parent_issue_id: parentId },
+      relations: ['sprint'],
+      order: { id: 'ASC' },
+      skip,
+      take: limit,
+      select: {
+        id: true,
+        name: true,
+        summary: true,
+        description: true,
+        type: true,
+        tags: true,
+        status: true,
+        priority: true,
+        assignee_id: true,
+        reporter_id: true,
+        sprint: {
+          id: true,
+          name: true,
+        },
+      },
+    });
+
+    const items = await Promise.all(
+      subtasks.map(async (i) => {
+        const assignee = i.assignee_id
+          ? await this.userProxy.getUserById(i.assignee_id)
+          : null;
+
+        const reporter = i.reporter_id
+          ? await this.userProxy.getUserById(i.reporter_id)
+          : null;
+
+        return {
+          id: i.id,
+          name: i.name,
+          summary: i.summary,
+          description: i.description,
+          type: i.type,
+          tags: i.tags ?? null,
+          status: i.status,
+          priority: i.priority,
+
+          assigneeId: i.assignee_id,
+          assigneeName: assignee?.username || null,
+
+          reporterId: i.reporter_id,
+          reporterName: reporter?.username || null,
+
+          sprintId: i.sprint?.id || null,
+          sprintName: i.sprint?.name || null,
+        };
+      }),
+    );
+
+    return {
+      parentId,
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
+      items,
+    };
   }
 
   async getAllIds(): Promise<{ ids: number[] }> {
@@ -151,6 +241,13 @@ export class IssueService {
     return {
       ids: list.map((i) => i.id),
     };
+  }
+
+  async getListIssue() {
+    return this.issueRepo.find({
+      select: ['id', 'name'],
+      order: { name: 'ASC' },
+    });
   }
 
   async assignIssuesToSprint(dto: AssignIssuesToSprintDto) {
@@ -196,6 +293,7 @@ export class IssueService {
       reporter_id: dto.reporterId ?? null,
       assignee_id: dto.assigneeId ?? null,
       created_by: dto.createdBy ?? null,
+      parent_issue_id: dto.parentIssueId ?? null,
     });
     return this.issueRepo.save(issue);
   }
@@ -215,6 +313,7 @@ export class IssueService {
       reporter_id: dto.reporterId ?? issue.reporter_id,
       assignee_id: dto.assigneeId ?? issue.assignee_id,
       created_by: dto.createdBy ?? issue.created_by,
+      parent_issue_id: dto.parentIssueId ?? issue.parent_issue_id,
     });
 
     return this.issueRepo.save(issue);
