@@ -8,6 +8,7 @@ import {
   ParseIntPipe,
   Patch,
   Post,
+  Req,
 } from '@nestjs/common';
 import { CommentService } from './comment.service';
 import { CreateCommentDto } from './dto/create-comment.dto';
@@ -26,21 +27,28 @@ export class CommentController {
   }
 
   @Post()
-  async create(@Body() dto: CreateCommentDto): Promise<Comment> {
-    return this.commentService.create(dto);
+  async create(@Body() dto: CreateCommentDto, @Req() req): Promise<Comment> {
+    const user_id = Number(req.headers['x-user-id']);
+    return this.commentService.create(dto, user_id);
   }
 
   @Patch(':id')
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateCommentDto,
+    @Req() req,
   ): Promise<Comment> {
-    return this.commentService.update(id, dto);
+    const user_id = Number(req.headers['x-user-id']);
+    return this.commentService.update(id, dto, user_id);
   }
 
   // DELETE /comments/:id
   @Delete(':id')
-  async remove(@Param('id', ParseIntPipe) id: number): Promise<void> {
-    return this.commentService.remove(id);
+  async remove(
+    @Param('id', ParseIntPipe) id: number,
+    @Req() req,
+  ): Promise<void> {
+    const user_id = Number(req.headers['x-user-id']);
+    return this.commentService.remove(id, user_id);
   }
 }

@@ -56,7 +56,7 @@ export class AuthRoute {
     console.log('GATEWAY → AUTH:', { method, url, body });
 
     try {
-      const result = await this.proxy.forward(method, url, body, headers);
+      const result = await this.proxy.forward(req, method, url, body, headers);
       return res.status(result.status).json(result.data);
     } catch (err) {
       console.log('❌ ERROR:', err.message);

@@ -49,7 +49,7 @@ export class AuthService {
     if (!user) throw new UnauthorizedException('Invalid credentials');
 
     const payload = {
-      sub: user.id,
+      id: user.id,
       email: user.email,
       username: user.username,
     };
@@ -59,7 +59,7 @@ export class AuthService {
     });
 
     const refresh_token = this.jwtService.sign(
-      { sub: user.id },
+      { id: user.id },
       { expiresIn: '3d' },
     );
 
@@ -110,7 +110,7 @@ export class AuthService {
     }
 
     const user = await this.userRepo.findOne({
-      where: { id: payload.sub },
+      where: { id: payload.id },
     });
 
     if (!user) {
@@ -125,7 +125,7 @@ export class AuthService {
     // Tạo Access Token mới
     const newAccessToken = this.jwtService.sign(
       {
-        sub: user.id,
+        id: user.id,
         email: user.email,
         username: user.username,
       },
@@ -152,7 +152,7 @@ export class AuthService {
     }
 
     const user = await this.userRepo.findOne({
-      where: { id: payload.sub },
+      where: { id: payload.id },
     });
 
     if (!user) {

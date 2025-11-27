@@ -3,7 +3,6 @@ import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
 import { ServiceTokenManager } from './service-token.manager';
 
-
 @Injectable()
 export class UserServiceProxy {
   private gatewayUrl = process.env.API_GATEWAY_URL || 'http://localhost:3000';
@@ -20,6 +19,7 @@ export class UserServiceProxy {
         this.http.get(`${this.gatewayUrl}/user-service/users/${id}`, {
           headers: {
             Authorization: `Bearer ${token}`,
+            'x-from-core-service': 'true',
           },
         }),
       );
@@ -37,6 +37,7 @@ export class UserServiceProxy {
         this.http.get(`${this.gatewayUrl}/user-service/roles/${id}`, {
           headers: {
             Authorization: `Bearer ${token}`,
+            'x-from-core-service': 'true',
           },
         }),
       );

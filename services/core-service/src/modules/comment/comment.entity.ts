@@ -23,6 +23,9 @@ export class Comment {
   @Column({ name: 'created_by', type: 'int' })
   created_by: number;
 
+  @Column({ name: 'updated_by', type: 'int', nullable: true })
+  updated_by: number;
+
   @CreateDateColumn({ name: 'created_at' })
   created_at: Date;
 

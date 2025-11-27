@@ -7,6 +7,7 @@ import {
   Patch,
   Delete,
   Query,
+  Req,
 } from '@nestjs/common';
 import { IssueService } from './issue.service';
 import { CreateIssueDto } from './dto/create-issue.dto';
@@ -51,22 +52,26 @@ export class IssueController {
   }
 
   @Post()
-  create(@Body() dto: CreateIssueDto) {
-    return this.issueService.create(dto);
+  create(@Body() dto: CreateIssueDto, @Req() req) {
+    const user_id = Number(req.headers['x-user-id']);
+    return this.issueService.create(dto, user_id);
   }
 
-  @Patch('assign-to-sprint')
-  assignIssuesToSprint(@Body() dto: AssignIssuesToSprintDto) {
-    return this.issueService.assignIssuesToSprint(dto);
-  }
+  // @Patch('assign-to-sprint')
+  // assignIssuesToSprint(@Body() dto: AssignIssuesToSprintDto, @Req() req) {
+  //   const user_id = Number(req.headers['x-user-id']);
+  //   return this.issueService.assignIssuesToSprint(dto, user_id);
+  // }
 
   @Patch(':id')
-  update(@Param('id') id: number, @Body() dto: UpdateIssueDto) {
-    return this.issueService.update(id, dto);
+  update(@Param('id') id: number, @Body() dto: UpdateIssueDto, @Req() req) {
+    const user_id = Number(req.headers['x-user-id']);
+    return this.issueService.update(id, dto, user_id);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: number) {
-    return this.issueService.remove(id);
+  remove(@Param('id') id: number, @Req() req) {
+    const user_id = Number(req.headers['x-user-id']);
+    return this.issueService.remove(id, user_id);
   }
 }

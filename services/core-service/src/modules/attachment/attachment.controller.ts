@@ -9,6 +9,7 @@ import {
   UseInterceptors,
   UploadedFile,
   StreamableFile,
+  Req,
 } from '@nestjs/common';
 import { AttachmentService } from './attachment.service';
 import type { CreateAttachmentDto } from './dto/create-attachment.dto';
@@ -32,8 +33,9 @@ export class AttachmentController {
   async create(
     @Body() dto: any, // Các trường ngoài file
     @UploadedFile() file: Express.Multer.File, // File upload
+    @Req() req,
   ) {
-    
+    const user_id = Number(req.headers['x-user-id']);
     // Kiểm tra nếu không có file
     if (!file) {
       throw new BadRequestException('No file uploaded');
@@ -53,7 +55,7 @@ export class AttachmentController {
     };
 
     // Lưu file vào DB
-    return this.attachmentService.create(attachmentDto);
+    return this.attachmentService.create(attachmentDto, user_id);
   }
 
   @Get('issue/:issueId')
@@ -74,7 +76,8 @@ export class AttachmentController {
   }
 
   @Delete(':id')
-  async delete(@Param('id') id: number) {
-    return this.attachmentService.delete(id);
+  async delete(@Param('id') id: number, @Req() req) {
+    const user_id = Number(req.headers['x-user-id']);
+    return this.attachmentService.delete(id, user_id);
   }
 }

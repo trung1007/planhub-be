@@ -23,6 +23,7 @@ export class Attachment {
   @Column({ type: 'bytea' })
   file_data: Buffer; // Lưu trữ dữ liệu file nhị phân
 
+
   @Column({ type: 'varchar', length: 255, nullable: true })
   mime_type: string | null;
 

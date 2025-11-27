@@ -10,9 +10,10 @@ import { SharedModule } from 'src/shared/shared.module';
 import { Sprint } from '../sprint/sprint.entity';
 import { Release } from '../release/release.entity';
 import { Project } from '../project/project.entity';
+import { IssueHistoryModule } from '../issue-history/issue-history.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Issue, Attachment, Comment, Subtask, Sprint, Project, Release]), SharedModule],
+  imports: [TypeOrmModule.forFeature([Issue, Attachment, Comment, Subtask, Sprint, Project, Release]), SharedModule, IssueHistoryModule],
     controllers: [IssueController],
     providers: [IssueService],
     exports: [IssueService],

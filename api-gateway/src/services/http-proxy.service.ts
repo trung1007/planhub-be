@@ -6,6 +6,7 @@ import Redis from 'ioredis';
 export class HttpProxyService {
   constructor(@Inject('REDIS_CLIENT') private readonly redis: Redis) {}
   async forward(
+    req: any,
     method: string,
     url: string,
     body: any,
@@ -21,6 +22,12 @@ export class HttpProxyService {
     const path = new URL(url).pathname;
     const cacheKey = `CACHE:${method}:${path}`;
     console.log('cacheKey:', cacheKey);
+
+    const skipRequestId = incomingHeaders['x-from-core-service'] === 'true';
+
+    if (!skipRequestId) {
+      headers['x-user-id'] = req.user.id;
+    }
 
     // GET cache
     if (method === 'GET') {
@@ -43,7 +50,9 @@ export class HttpProxyService {
       method,
       url,
       data: body,
-      headers,
+      headers: {
+        ...headers,
+      },
       timeout: 5000,
       validateStatus: (status) => status < 400,
     });
@@ -62,42 +71,22 @@ export class HttpProxyService {
 
     await this.invalidateCache(method, path);
 
-    // INVALIDATE cache
-    // if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
-    //   let pattern: string | null = null;
-
-    //   if (path.startsWith('/user-service/roles')) {
-    //     pattern = 'CACHE:GET:/user-service/roles/*';
-    //   } else if (path.startsWith('/user-service/users')) {
-    //     pattern = 'CACHE:GET:/user-service/users/*';
-    //   } else if (path.startsWith('/user-service/role-permissions')) {
-    //     pattern = 'CACHE:GET:/user-service/role-permissions/*';
-    //   }
-
-    //   if (path.startsWith('/core-service/')) {
-    //     pattern = `CACHE:GET:/core-service/*`;
-    //   }
-
-    //   if (pattern) {
-    //     const keys = await this.redis.keys(pattern);
-
-    //     if (keys.length > 0) {
-    //       await this.redis.del(...keys);
-    //       console.log(`🗑️ INVALIDATE CACHE for ${pattern}:`, keys);
-    //     } else {
-    //       console.log(`⚠️ No cache keys matched pattern: ${pattern}`);
-    //     }
-    //   }
-    // }
-
     return result;
   }
 
   async forwardStream(req, url: string) {
+    const skipRequestId = req.headers['x-from-core-service'] === 'true';
+
+    if (!skipRequestId) {
+      req.headers['x-user-id'] = req.user.id;
+    }
+    
     const response = await axios({
       method: req.method,
       url,
-      headers: { ...req.headers },
+      headers: {
+        ...req.headers,
+      },
       data: req,
       maxBodyLength: Infinity,
       maxContentLength: Infinity,

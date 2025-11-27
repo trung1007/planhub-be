@@ -5,9 +5,10 @@ import { Comment } from './comment.entity';
 import { CommentService } from './comment.service';
 import { CommentController } from './comment.controller';
 import { SharedModule } from 'src/shared/shared.module';
+import { IssueHistoryModule } from '../issue-history/issue-history.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Comment]), SharedModule],
+  imports: [TypeOrmModule.forFeature([Comment]), SharedModule, IssueHistoryModule],
   controllers: [CommentController],
   providers: [CommentService],
   exports: [CommentService],

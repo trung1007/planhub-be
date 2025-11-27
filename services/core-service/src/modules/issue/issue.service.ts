@@ -14,6 +14,12 @@ import { AssignIssuesToSprintDto } from './dto/add-issue-to-sprint.dto';
 import { Sprint } from '../sprint/sprint.entity';
 import { Release } from '../release/release.entity';
 import { Project } from '../project/project.entity';
+import { IssueHistoryService } from '../issue-history/issue-history.service';
+import { HistoryEvent } from '../issue-history/issue-history.event';
+import {
+  HistoryAction,
+  HistoryEntity,
+} from '../issue-history/issue-history.entity';
 
 @Injectable()
 export class IssueService {
@@ -27,6 +33,8 @@ export class IssueService {
     private readonly releaseRepo: Repository<Release>,
     @InjectRepository(Project)
     private readonly projectRepo: Repository<Project>,
+
+    private readonly historyService: IssueHistoryService,
   ) {}
 
   async findAll(page: number = 1, limit: number = 10) {
@@ -50,7 +58,7 @@ export class IssueService {
         reporter_id: true,
       },
       where: {
-        parent_issue_id: IsNull(), // 🔥 chỉ lấy issue top-level
+        parent_issue_id: IsNull(),
       },
       relations: ['sprint'],
       skip,
@@ -109,6 +117,10 @@ export class IssueService {
 
     if (!issue) throw new NotFoundException('Issue not found');
 
+    const createdUser = issue.created_by
+      ? await this.userProxy.getUserById(issue.created_by)
+      : null;
+
     const assignee = issue.assignee_id
       ? await this.userProxy.getUserById(issue.assignee_id)
       : null;
@@ -145,15 +157,10 @@ export class IssueService {
       parentIssueId: issue.parent_issue_id,
       parentIssueName: issue.parent?.name ?? null,
 
-      subtasks:
-        issue.subtasks?.map((s) => ({
-          id: s.id,
-          name: s.name,
-          summary: s.summary,
-          status: s.status,
-          priority: s.priority,
-          assigneeId: s.assignee_id,
-        })) ?? [],
+      createdUser: createdUser?.username,
+      createdName: createdUser?.fullName,
+
+      subtasksNum: issue.subtasks?.length || 0,
     };
 
     return issueResponse;
@@ -250,37 +257,7 @@ export class IssueService {
     });
   }
 
-  async assignIssuesToSprint(dto: AssignIssuesToSprintDto) {
-    const { sprintId, issueIds } = dto;
-
-    // Kiểm tra sprint tồn tại
-    const sprint = await this.sprintRepo.findOne({ where: { id: sprintId } });
-    if (!sprint) {
-      throw new NotFoundException(`Sprint ${sprintId} not found`);
-    }
-
-    // Lấy danh sách issue hợp lệ
-    const issues = await this.issueRepo.find({
-      where: { id: In(issueIds) },
-    });
-
-    if (issues.length !== issueIds.length) {
-      throw new BadRequestException(`Some issue IDs are invalid`);
-    }
-
-    // Update sprint_id
-    issues.forEach((i) => (i.sprint_id = sprintId));
-
-    await this.issueRepo.save(issues);
-
-    return {
-      message: 'Issues assigned to sprint successfully',
-      sprintId,
-      issueCount: issues.length,
-    };
-  }
-
-  async create(dto: CreateIssueDto) {
+  async create(dto: CreateIssueDto, user_id: number) {
     const issue = this.issueRepo.create({
       sprint_id: dto.sprintId ?? null,
       type: dto.type,
@@ -292,14 +269,33 @@ export class IssueService {
       priority: dto.priority ?? null,
       reporter_id: dto.reporterId ?? null,
       assignee_id: dto.assigneeId ?? null,
-      created_by: dto.createdBy ?? null,
+      created_by: user_id,
       parent_issue_id: dto.parentIssueId ?? null,
     });
-    return this.issueRepo.save(issue);
+    const saved = await this.issueRepo.save(issue);
+    this.historyService.log(
+      new HistoryEvent(
+        saved.id,
+        HistoryEntity.ISSUE,
+        saved.id,
+        HistoryAction.ISSUE_CREATE,
+        saved.created_by,
+        null,
+        null,
+        null,
+        {
+          name: saved.name,
+          type: saved.type,
+        },
+      ),
+    );
+    return saved;
   }
 
-  async update(id: number, dto: UpdateIssueDto) {
+  async update(id: number, dto: UpdateIssueDto, user_id: number) {
     const issue = await this.findOne(id);
+
+    const oldIssue = { ...issue };
 
     Object.assign(issue, {
       sprint_id: dto.sprintId ?? issue.sprint_id,
@@ -312,15 +308,80 @@ export class IssueService {
       priority: dto.priority ?? issue.priority,
       reporter_id: dto.reporterId ?? issue.reporter_id,
       assignee_id: dto.assigneeId ?? issue.assignee_id,
-      created_by: dto.createdBy ?? issue.created_by,
+      updated_id: user_id,
       parent_issue_id: dto.parentIssueId ?? issue.parent_issue_id,
     });
+    this.emitIssueUpdateHistory(oldIssue, issue, user_id);
 
     return this.issueRepo.save(issue);
   }
 
-  async remove(id: number) {
+  private emitIssueUpdateHistory(
+    oldIssue: Issue,
+    newIssue: Issue,
+    userId: number,
+  ) {
+    const fields: (keyof Issue)[] = [
+      'name',
+      'summary',
+      'description',
+      'status',
+      'priority',
+      'tags',
+      'type',
+      'assignee_id',
+      'reporter_id',
+      'sprint_id',
+      'parent_issue_id',
+    ];
+
+    fields.forEach((field) => {
+      if (oldIssue[field] !== newIssue[field]) {
+        this.historyService.log(
+          new HistoryEvent(
+            newIssue.id,
+            HistoryEntity.ISSUE,
+            newIssue.id,
+            HistoryAction.ISSUE_UPDATE,
+            userId,
+            String(field),
+            String(oldIssue[field] ?? ''),
+            String(newIssue[field] ?? ''),
+            null,
+          ),
+        );
+      }
+    });
+  }
+
+  async remove(id: number, user_id:number) {
+    const issue = await this.issueRepo.findOne({ where: { id } });
+
+    if (!issue) {
+      throw new NotFoundException('Issue not found');
+    }
+
+    // Xoá issue
     await this.issueRepo.delete(id);
+
+    // Emit history event
+    this.historyService.log(
+      new HistoryEvent(
+        id, // issue_id
+        HistoryEntity.ISSUE, 
+        id, // entity_id (issue id)
+        HistoryAction.ISSUE_DELETE,
+        user_id, 
+        null, 
+        null, 
+        null,
+        {
+          deleted_name: issue.name,
+          deleted_summary: issue.summary,
+        },
+      ),
+    );
+
     return { deleted: true };
   }
 }
