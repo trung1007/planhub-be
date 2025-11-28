@@ -3,6 +3,13 @@ import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
 import { ServiceTokenManager } from './service-token.manager';
 
+export interface UserProxyEntity {
+  id: number;
+  username: string;
+  fullName: string;
+  // thêm các field khác nếu có
+}
+
 @Injectable()
 export class UserServiceProxy {
   private gatewayUrl = process.env.API_GATEWAY_URL || 'http://localhost:3000';
@@ -27,6 +34,28 @@ export class UserServiceProxy {
     } catch (error) {
       console.error('Error fetching user:', error?.message);
       return null;
+    }
+  }
+
+  async getUsersByIds(ids: number[]) {
+    try {
+      const token = this.tokenManager.getToken();
+      const response = await firstValueFrom(
+        this.http.post(
+          `${this.gatewayUrl}/user-service/users/list-by-ids`,
+          { ids }, // body
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'x-from-core-service': 'true',
+            },
+          },
+        ),
+      );
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching users by ids:', error?.message);
+      return [];
     }
   }
 

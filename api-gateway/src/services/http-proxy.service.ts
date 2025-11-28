@@ -21,9 +21,8 @@ export class HttpProxyService {
 
     const path = new URL(url).pathname;
     const cacheKey = `CACHE:${method}:${path}`;
-    console.log('cacheKey:', cacheKey);
 
-    const skipRequestId = incomingHeaders['x-from-core-service'] === 'true';
+    const skipRequestId = incomingHeaders['x-from-core-service'] === 'true' || path.includes("auth");
 
     if (!skipRequestId) {
       headers['x-user-id'] = req.user.id;

@@ -4,7 +4,10 @@ import { HistoryEvent } from './issue-history.event';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { IssueHistory } from './issue-history.entity';
-import { UserServiceProxy } from 'src/shared/user-service.proxy';
+import {
+  UserProxyEntity,
+  UserServiceProxy,
+} from 'src/shared/user-service.proxy';
 
 @Injectable()
 export class IssueHistoryService {
@@ -22,24 +25,50 @@ export class IssueHistoryService {
     this.eventEmitter.emit('history.create', event);
   }
 
-  /** Lấy danh sách history theo issueId */
-  async getByIssue(issueId: number) {
-    const historyList = await this.repo.find({
+  async getByIssue(issueId: number, page = 1, limit = 10) {
+    const skip = (page - 1) * limit;
+
+    const [historyList, total] = await this.repo.findAndCount({
       where: { issue_id: issueId },
       order: { created_at: 'DESC' },
+      skip,
+      take: limit,
     });
-    const historyResponse = await Promise.all(
-      historyList.map(async (item) => {
-        const actorChange = item.changed_by
-          ? await this.userProxy.getUserById(item.changed_by)
-          : null;
-        return {
-          ...item,
-          changeUser: actorChange?.username || null,
-          changeName: actorChange?.fullName || null,
-        };
-      }),
+
+    const userIds = Array.from(
+      new Set(
+        historyList
+          .map((item) => item.changed_by)
+          .filter((id): id is number => id !== null),
+      ),
     );
-    return historyResponse;
+
+    const users: UserProxyEntity[] =
+      userIds.length > 0 ? await this.userProxy.getUsersByIds(userIds) : [];
+
+    // 3️⃣ Convert to Map for O(1) lookup
+    const userMap = new Map<number, UserProxyEntity>(
+      users.map((u) => [u.id, u]),
+    );
+
+    // 4️⃣ Map response
+    const historyResponse = historyList.map((item) => {
+      const actor = item.changed_by ? userMap.get(item.changed_by) : null;
+
+      return {
+        ...item,
+        changeUser: actor?.username || null,
+        changeName: actor?.fullName || null,
+      };
+    });
+
+
+    return {
+      data: historyResponse,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
   }
 }

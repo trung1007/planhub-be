@@ -11,10 +11,6 @@ import {
   Body,
 } from '@nestjs/common';
 import { HttpProxyService } from '../services/http-proxy.service';
-import { Public } from 'common/public.decorator';
-import { FileInterceptor } from '@nestjs/platform-express';
-import { Blob } from 'node-fetch';
-import FormData from 'form-data';
 
 @Controller('core-service')
 export class CoreRoute {
@@ -60,10 +56,10 @@ export class CoreRoute {
     const body = req.body;
     const headers = req.headers;
 
-    console.log('Gateway Request Method:', method); // Log method
-    console.log('Gateway Request URL:', url); // Log URL
-    console.log('Gateway Request Headers:', headers); // Log headers
-    console.log('Gateway Request Body:', body); // Log body
+    // console.log('Gateway Request Method:', method); // Log method
+    // console.log('Gateway Request URL:', url); // Log URL
+    // console.log('Gateway Request Headers:', headers); // Log headers
+    // console.log('Gateway Request Body:', body); // Log body
     try {
       const result = await this.proxy.forward(req, method, url, body, headers);
       return res.status(result.status).json(result.data);

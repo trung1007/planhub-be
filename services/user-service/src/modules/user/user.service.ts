@@ -4,7 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -54,6 +54,12 @@ export class UserService {
 
     if (!user) throw new NotFoundException(`User ${id} not found`);
     return user;
+  }
+
+  async getUsersByIds(ids: number[]) {
+    return this.userRepo.find({
+      where: { id: In(ids) },
+    });
   }
 
   async findList() {

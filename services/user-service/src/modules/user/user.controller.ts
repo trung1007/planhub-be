@@ -13,6 +13,7 @@ import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { UsersByIdsDto } from './dto/get-user-ids.dto';
 
 @Controller('users')
 export class UserController {
@@ -34,6 +35,11 @@ export class UserController {
   @Post()
   async create(@Body() dto: CreateUserDto) {
     return this.userService.create(dto);
+  }
+
+  @Post('list-by-ids')
+  async getUsersByIds(@Body() body: UsersByIdsDto) {
+    return this.userService.getUsersByIds(body.ids);
   }
 
   @Put(':id')
