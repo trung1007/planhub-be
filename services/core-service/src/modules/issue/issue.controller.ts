@@ -12,7 +12,7 @@ import {
 import { IssueService } from './issue.service';
 import { CreateIssueDto } from './dto/create-issue.dto';
 import { UpdateIssueDto } from './dto/update-issue.dto';
-import { AssignIssuesToSprintDto } from './dto/add-issue-to-sprint.dto';
+import { AssignIssueToSprintDto } from './dto/add-issue-to-sprint.dto';
 
 @Controller('issues')
 export class IssueController {
@@ -23,10 +23,10 @@ export class IssueController {
     return this.issueService.findAll(page, limit);
   }
 
-  @Get('all-ids')
-  getAllIds() {
-    return this.issueService.getAllIds();
-  }
+  // @Get('all-ids')
+  // getAllIds() {
+  //   return this.issueService.getAllIds();
+  // }
 
   @Get('issue-list')
   getIssueList() {
@@ -57,11 +57,11 @@ export class IssueController {
     return this.issueService.create(dto, user_id);
   }
 
-  // @Patch('assign-to-sprint')
-  // assignIssuesToSprint(@Body() dto: AssignIssuesToSprintDto, @Req() req) {
-  //   const user_id = Number(req.headers['x-user-id']);
-  //   return this.issueService.assignIssuesToSprint(dto, user_id);
-  // }
+  @Post('assign-to-active-sprint')
+  assignIssueToSprint(@Body() body: AssignIssueToSprintDto, @Req() req) {
+    const user_id = Number(req.headers['x-user-id']);
+    return this.issueService.assignIssueToSprint(body.issueId, user_id);
+  }
 
   @Patch(':id')
   update(@Param('id') id: number, @Body() dto: UpdateIssueDto, @Req() req) {

@@ -56,13 +56,15 @@ export class IssueHistory {
   @Column({ type: 'varchar', length: 100, nullable: true })
   field: string | null;
 
+  @Column({ type: 'int', nullable: true })
+  field_id: number | null;
+
   /** Value thay đổi của Issue field */
   @Column({ type: 'text', nullable: true })
   old_value: string | null;
 
   @Column({ type: 'text', nullable: true })
   new_value: string | null;
-
 
   @Column({ type: 'jsonb', nullable: true })
   metadata: any | null;

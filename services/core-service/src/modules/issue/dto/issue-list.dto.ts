@@ -19,5 +19,5 @@ export class IssueListDTO {
   reporterName: string | null;
 
   sprintId: number | null;
-  sprintName: string | null;
+  activeSprint: string | null;
 }

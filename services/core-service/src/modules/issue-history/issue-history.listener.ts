@@ -21,6 +21,7 @@ export class IssueHistoryListener {
       action: event.action,
       changed_by: event.changed_by,
       field: event.field ?? null,
+      field_id:event.field_id ?? null,
       old_value: event.old_value ?? null,
       new_value: event.new_value ?? null,
       metadata: event.metadata ?? null,

@@ -10,7 +10,7 @@ import { CreateIssueDto } from './dto/create-issue.dto';
 import { UpdateIssueDto } from './dto/update-issue.dto';
 import { UserServiceProxy } from 'src/shared/user-service.proxy';
 import { IssueListDTO } from './dto/issue-list.dto';
-import { AssignIssuesToSprintDto } from './dto/add-issue-to-sprint.dto';
+import { AssignIssueToSprintDto } from './dto/add-issue-to-sprint.dto';
 import { Sprint } from '../sprint/sprint.entity';
 import { Release } from '../release/release.entity';
 import { Project } from '../project/project.entity';
@@ -19,6 +19,7 @@ import { HistoryEvent } from '../issue-history/issue-history.event';
 import {
   HistoryAction,
   HistoryEntity,
+  IssueHistory,
 } from '../issue-history/issue-history.entity';
 
 @Injectable()
@@ -33,6 +34,9 @@ export class IssueService {
     private readonly releaseRepo: Repository<Release>,
     @InjectRepository(Project)
     private readonly projectRepo: Repository<Project>,
+
+    @InjectRepository(IssueHistory)
+    private readonly issueHistoryRepo: Repository<IssueHistory>,
 
     private readonly historyService: IssueHistoryService,
   ) {}
@@ -53,6 +57,7 @@ export class IssueService {
         sprint: {
           id: true,
           name: true,
+          is_active: true,
         },
         assignee_id: true,
         reporter_id: true,
@@ -95,7 +100,8 @@ export class IssueService {
           reporterName: reporter?.username || null,
 
           sprintId: i.sprint?.id || null,
-          sprintName: i.sprint?.name || null,
+          activeSprint: i.sprint.is_active ? i.sprint.name : null,
+          // sprintName: i.sprint?.name || null,
         };
       }),
     );
@@ -150,7 +156,8 @@ export class IssueService {
       reporterName: reporter?.username || null,
 
       sprintId: issue.sprint?.id || null,
-      sprintName: issue.sprint?.name || null,
+      // sprintName: issue.sprint?.name || null,
+      activeSprint: issue.sprint.is_active ? issue.sprint.name : null,
       releaseName: release?.name,
       projectName: project?.name,
 
@@ -240,15 +247,15 @@ export class IssueService {
     };
   }
 
-  async getAllIds(): Promise<{ ids: number[] }> {
-    const list = await this.issueRepo.find({
-      select: ['id'],
-    });
+  // async getAllIds(): Promise<{ ids: number[] }> {
+  //   const list = await this.issueRepo.find({
+  //     select: ['id'],
+  //   });
 
-    return {
-      ids: list.map((i) => i.id),
-    };
-  }
+  //   return {
+  //     ids: list.map((i) => i.id),
+  //   };
+  // }
 
   async getListIssue() {
     return this.issueRepo.find({
@@ -280,7 +287,8 @@ export class IssueService {
         saved.id,
         HistoryAction.ISSUE_CREATE,
         saved.created_by,
-        null,
+        saved.sprint_id,
+        'sprint',
         null,
         null,
         {
@@ -311,15 +319,77 @@ export class IssueService {
       updated_id: user_id,
       parent_issue_id: dto.parentIssueId ?? issue.parent_issue_id,
     });
-    this.emitIssueUpdateHistory(oldIssue, issue, user_id);
 
-    return this.issueRepo.save(issue);
+    let oldAssignee = null;
+    let newAssignee = null;
+
+    if (oldIssue.assignee_id !== issue.assignee_id) {
+      if (oldIssue.assignee_id) {
+        oldAssignee = await this.userProxy.getUserById(oldIssue.assignee_id);
+      }
+      if (issue.assignee_id) {
+        newAssignee = await this.userProxy.getUserById(issue.assignee_id);
+      }
+    }
+
+    let oldReporter = null;
+    let newReporter = null;
+
+    if (oldIssue.reporter_id !== issue.reporter_id) {
+      if (oldIssue.reporter_id) {
+        oldReporter = await this.userProxy.getUserById(oldIssue.reporter_id);
+      }
+      if (issue.reporter_id) {
+        newReporter = await this.userProxy.getUserById(issue.reporter_id);
+      }
+    }
+
+    let oldSprint: Sprint | null = null;
+    let newSprint: Sprint | null = null;
+
+    if (oldIssue.sprint_id !== issue.sprint_id) {
+      if (oldIssue.sprint_id) {
+        oldSprint = await this.sprintRepo.findOne({
+          where: { id: oldIssue.sprint_id },
+        });
+      }
+
+      if (issue.sprint_id) {
+        newSprint = await this.sprintRepo.findOne({
+          where: { id: issue.sprint_id },
+        });
+
+        if (!newSprint) {
+          throw new NotFoundException(`Sprint ${issue.sprint_id} not found`);
+        }
+        issue.sprint = newSprint;
+      }
+    }
+
+    this.emitIssueUpdateHistory(oldIssue, issue, user_id, {
+      oldAssignee,
+      newAssignee,
+      oldReporter,
+      newReporter,
+      oldSprint,
+      newSprint,
+    });
+    await this.issueRepo.save(issue);
+    return this.findOne(id);
   }
 
   private emitIssueUpdateHistory(
     oldIssue: Issue,
     newIssue: Issue,
     userId: number,
+    labels: {
+      oldAssignee: any;
+      newAssignee: any;
+      oldReporter: any;
+      newReporter: any;
+      oldSprint: any;
+      newSprint: any;
+    },
   ) {
     const fields: (keyof Issue)[] = [
       'name',
@@ -336,7 +406,52 @@ export class IssueService {
     ];
 
     fields.forEach((field) => {
+      let changed = false;
+
+      // ========= SPECIAL CASE: TAGS (array comparison) =========
+      if (field === 'tags') {
+        const oldTags = oldIssue.tags ?? [];
+        const newTags = newIssue.tags ?? [];
+
+        // Compare value (not reference)
+        changed = JSON.stringify(oldTags) !== JSON.stringify(newTags);
+      }
+      // ========= DEFAULT CASE =========
+      else {
+        changed = oldIssue[field] !== newIssue[field];
+      }
+
+      if (!changed) return;
+
       if (oldIssue[field] !== newIssue[field]) {
+        let label = String(field);
+        let oldVal: any = oldIssue[field] ?? '';
+        let newVal: any = newIssue[field] ?? '';
+        let fieldId: number | null = null;
+
+        switch (field) {
+          case 'assignee_id':
+            label = 'assignee';
+            oldVal = labels.oldAssignee?.username ?? null;
+            newVal = labels.newAssignee?.username ?? null;
+            fieldId = newIssue.assignee_id ?? null;
+            break;
+
+          case 'reporter_id':
+            label = 'reporter';
+            oldVal = labels.oldReporter?.username ?? null;
+            newVal = labels.newReporter?.username ?? null;
+            fieldId = newIssue.reporter_id ?? null;
+            break;
+
+          case 'sprint_id':
+            label = 'sprint';
+            oldVal = labels.oldSprint?.name ?? null;
+            newVal = labels.newSprint?.name ?? null;
+            fieldId = newIssue.sprint_id ?? null;
+            break;
+        }
+
         this.historyService.log(
           new HistoryEvent(
             newIssue.id,
@@ -344,9 +459,10 @@ export class IssueService {
             newIssue.id,
             HistoryAction.ISSUE_UPDATE,
             userId,
-            String(field),
-            String(oldIssue[field] ?? ''),
-            String(newIssue[field] ?? ''),
+            fieldId,
+            label,
+            oldVal,
+            newVal,
             null,
           ),
         );
@@ -354,7 +470,74 @@ export class IssueService {
     });
   }
 
-  async remove(id: number, user_id:number) {
+  async assignIssueToSprint(issueId: number, user_id: number) {
+    const nearestActiveSprint =
+      await this.getNearestActiveSprintForIssue(issueId);
+
+    if (!nearestActiveSprint) {
+      throw new BadRequestException({
+        issueId,
+        updated: false,
+        message: 'No active sprint found',
+      });
+    }
+
+    // Lấy issue hiện tại
+    const issue = await this.issueRepo.findOne({
+      where: { id: issueId },
+      select: ['id', 'sprint_id'],
+    });
+
+    if (!issue) {
+      throw new BadRequestException({
+        issueId,
+        updated: false,
+        message: 'Issue not found',
+      });
+    }
+
+    const oldSprintId = issue.sprint_id;
+
+    // Update sprint
+    await this.issueRepo.update(
+      { id: issueId },
+      {
+        sprint_id: nearestActiveSprint.id,
+        updated_by: user_id,
+      },
+    );
+
+    // Fetch old sprint name
+    let oldSprint: Sprint | null = null;
+
+    if (oldSprintId) {
+      oldSprint = await this.sprintRepo.findOne({ where: { id: oldSprintId } });
+    }
+
+    // Log history
+    this.historyService.log(
+      new HistoryEvent(
+        issueId,
+        HistoryEntity.ISSUE,
+        issueId,
+        HistoryAction.ISSUE_UPDATE,
+        user_id,
+        nearestActiveSprint.id,
+        'sprint',
+        oldSprint?.name ?? null,
+        nearestActiveSprint.name,
+        null,
+      ),
+    );
+
+    return {
+      issueId,
+      updated: true,
+      sprintId: nearestActiveSprint.id,
+    };
+  }
+
+  async remove(id: number, user_id: number) {
     const issue = await this.issueRepo.findOne({ where: { id } });
 
     if (!issue) {
@@ -368,12 +551,12 @@ export class IssueService {
     this.historyService.log(
       new HistoryEvent(
         id, // issue_id
-        HistoryEntity.ISSUE, 
+        HistoryEntity.ISSUE,
         id, // entity_id (issue id)
         HistoryAction.ISSUE_DELETE,
-        user_id, 
-        null, 
-        null, 
+        user_id,
+        null,
+        null,
         null,
         {
           deleted_name: issue.name,
@@ -383,5 +566,47 @@ export class IssueService {
     );
 
     return { deleted: true };
+  }
+
+  async getNearestActiveSprintForIssue(issueId: number) {
+    // 1️⃣ Lấy lịch sử sprint của issue
+    const issueSprintHistory = await this.issueHistoryRepo.find({
+      where: {
+        issue_id: issueId,
+        field: 'sprint',
+      },
+      select: ['field_id'],
+      order: { created_at: 'DESC' },
+    });
+
+    if (!issueSprintHistory.length) {
+      return null; // Issue chưa từng được gán sprint
+    }
+    const sprintIdsByOrder = issueSprintHistory
+      .map((h) => h.field_id)
+      .filter((id): id is number => id !== null);
+
+    if (!sprintIdsByOrder.length) {
+      return null;
+    }
+
+    // 3️⃣ Lấy toàn bộ sprint thuộc những id này
+    const activeSprints = await this.sprintRepo.find({
+      where: { id: In(sprintIdsByOrder), is_active: true },
+    });
+
+    if (!activeSprints.length) {
+      return null; // Không có sprint active nào
+    }
+
+    const activeMap = new Map(activeSprints.map((s) => [s.id, s]));
+
+    for (const sprintId of sprintIdsByOrder) {
+      if (activeMap.has(sprintId)) {
+        return activeMap.get(sprintId);
+      }
+    }
+
+    return null;
   }
 }

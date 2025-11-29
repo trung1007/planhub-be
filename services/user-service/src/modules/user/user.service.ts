@@ -63,13 +63,6 @@ export class UserService {
   }
 
   async findList() {
-    console.log(
-      this.userRepo.find({
-        select: ['id', 'username'],
-        order: { username: 'ASC' },
-      }),
-    );
-
     return this.userRepo.find({
       select: ['id', 'username'],
       order: { username: 'ASC' },

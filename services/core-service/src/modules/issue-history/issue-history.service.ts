@@ -27,7 +27,6 @@ export class IssueHistoryService {
 
   async getByIssue(issueId: number, page = 1, limit = 10) {
     const skip = (page - 1) * limit;
-
     const [historyList, total] = await this.repo.findAndCount({
       where: { issue_id: issueId },
       order: { created_at: 'DESC' },

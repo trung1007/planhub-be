@@ -19,10 +19,11 @@ export class HttpProxyService {
     delete headers['content-length'];
     delete headers.connection;
 
-    const path = new URL(url).pathname;
-    const cacheKey = `CACHE:${method}:${path}`;
+    const urlObj = new URL(url);
+    const fullPath = urlObj.pathname + urlObj.search; 
+    const cacheKey = `CACHE:${method}:${fullPath}`;
 
-    const skipRequestId = incomingHeaders['x-from-core-service'] === 'true' || path.includes("auth");
+    const skipRequestId = incomingHeaders['x-from-core-service'] === 'true' || fullPath.includes("auth");
 
     if (!skipRequestId) {
       headers['x-user-id'] = req.user.id;
@@ -68,7 +69,7 @@ export class HttpProxyService {
       console.log('📝 SET CACHE →', cacheKey);
     }
 
-    await this.invalidateCache(method, path);
+    await this.invalidateCache(method, fullPath);
 
     return result;
   }

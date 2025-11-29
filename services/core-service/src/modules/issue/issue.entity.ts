@@ -82,10 +82,10 @@ export class Issue {
   assignee_id: number | null;
 
   @Column({ name: 'created_by', type: 'int' })
-  created_by: number ;
+  created_by: number;
 
-  @Column({ name: 'created_by', type: 'int', nullable:true })
-  updated_by: number ;
+  @Column({ name: 'updated_by', type: 'int', nullable: true })
+  updated_by: number;
 
   @CreateDateColumn({ name: 'created_at', type: 'timestamp' })
   created_at: Date;
