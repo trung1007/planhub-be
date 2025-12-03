@@ -10,6 +10,8 @@ import { SprintModule } from './modules/sprint/sprint.module';
 import { IssueModule } from './modules/issue/issue.module';
 import { AttachmentModule } from './modules/attachment/attachment.module';
 import { CommentModule } from './modules/comment/comment.module';
+import { StatusModule } from './modules/status/status.module';
+import { TransitionModule } from './modules/transition/transition.module';
 
 @Module({
   imports: [
@@ -26,28 +28,6 @@ import { CommentModule } from './modules/comment/comment.module';
       autoLoadEntities: true,
       synchronize: true,
     }),
-    // RouterModule.register([
-    //   {
-    //     path: 'core-service',
-    //     module: ProjectModule,
-    //   },
-    //   {
-    //     path: 'core-service',
-    //     module: ProjectMemberModule,
-    //   },
-    //   {
-    //     path: 'core-service',
-    //     module: ReleaseModule,
-    //   },
-    //   {
-    //     path: 'core-service',
-    //     module: SprintModule,
-    //   },
-    //   {
-    //     path: 'core-service',
-    //     module: IssueModule,
-    //   },
-    // ]),
 
     ProjectModule,
     ProjectMemberModule,
@@ -57,6 +37,8 @@ import { CommentModule } from './modules/comment/comment.module';
     AttachmentModule,
     CommentModule,
     WorkflowModule,
+    StatusModule, 
+    TransitionModule
   ],
 })
 export class AppModule {}

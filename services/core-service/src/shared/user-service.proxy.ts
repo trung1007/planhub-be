@@ -13,6 +13,7 @@ export interface UserProxyEntity {
 @Injectable()
 export class UserServiceProxy {
   private gatewayUrl = process.env.API_GATEWAY_URL || 'http://localhost:3000';
+  private userServiceUrl = process.env.USER_SERVICE_URL || 'http://localhost:3000';
 
   constructor(
     private readonly http: HttpService,
@@ -23,7 +24,7 @@ export class UserServiceProxy {
     try {
       const token = this.tokenManager.getToken();
       const response = await firstValueFrom(
-        this.http.get(`${this.gatewayUrl}/user-service/users/${id}`, {
+        this.http.get(`${this.userServiceUrl}/user-service/users/${id}`, {
           headers: {
             Authorization: `Bearer ${token}`,
             'x-from-core-service': 'true',
