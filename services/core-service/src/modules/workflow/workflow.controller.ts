@@ -1,5 +1,15 @@
 // workflow.controller.ts
-import { Body, Controller, Get, Param, Post, Query, Req } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  Req,
+} from '@nestjs/common';
 import { WorkflowService } from './workflow.service';
 import { CreateWorkflowDto } from './create-workflow.dto';
 
@@ -23,5 +33,21 @@ export class WorkflowController {
   async createWorkflow(@Body() payload: CreateWorkflowDto, @Req() req) {
     const user_id = Number(req.headers['x-user-id']);
     return this.workflowService.createWorkflow(payload, user_id);
+  }
+
+  // @Patch(':id')
+  // async updatedWorkflow(
+  //   @Param('id') id: number,
+  //   @Body() payload: CreateWorkflowDto,
+  //   @Req() req,
+  // ) {
+  //   const user_id = Number(req.headers['x-user-id']);
+  //   return this.workflowService.updateWorkflow(id, payload, user_id);
+  // }
+
+  @Delete(':id')
+  remove(@Param('id') id: number, @Req() req) {
+    const user_id = Number(req.headers['x-user-id']);
+    return this.workflowService.remove(id, user_id);
   }
 }
