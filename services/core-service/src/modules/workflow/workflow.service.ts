@@ -6,7 +6,8 @@ import { Workflow } from './workflow.entity';
 import { Project } from '../project/project.entity';
 import { Status } from '../status/status.entity';
 import { Transition } from '../transition/transition.entity';
-import { CreateWorkflowDto } from './create-workflow.dto';
+import { CreateStatusDto, CreateWorkflowDto } from './create-workflow.dto';
+import { UserServiceProxy } from 'src/shared/user-service.proxy';
 
 @Injectable()
 export class WorkflowService {
@@ -14,14 +15,7 @@ export class WorkflowService {
     @InjectRepository(Workflow)
     private readonly workflowRepo: Repository<Workflow>,
 
-    @InjectRepository(Project)
-    private readonly projectRepo: Repository<Project>,
-
-    @InjectRepository(Status)
-    private statusRepo: Repository<Status>,
-
-    @InjectRepository(Transition)
-    private transitionRepo: Repository<Transition>,
+    private readonly userProxy: UserServiceProxy,
 
     private dataSource: DataSource,
   ) {}
@@ -56,17 +50,28 @@ export class WorkflowService {
       take: limit,
     });
 
-    const result = data.map((item) => ({
-      id: item.id,
-      name: item.name,
-      key: item.key,
-      projectName: item.project?.name,
-      description: item.description,
-      createdBy: item.created_by,
-      updatedBy: item.updated_by,
-      createdAt: item.created_at,
-      updatedAt: item.updated_at,
-    }));
+    const result = await Promise.all(
+      data.map(async (item) => {
+        const createdBy = item.created_by
+          ? await this.userProxy.getUserById(item.created_by)
+          : null;
+        const updatedBy = item.updated_by
+          ? await this.userProxy.getUserById(item.updated_by)
+          : null;
+
+        return {
+          id: item.id,
+          name: item.name,
+          key: item.key,
+          projectName: item.project?.name,
+          description: item.description,
+          createdBy: createdBy?.username || null,
+          updatedBy: updatedBy?.username || null,
+          createdAt: item.created_at,
+          updatedAt: item.updated_at,
+        };
+      }),
+    );
 
     return {
       total,
@@ -132,7 +137,6 @@ export class WorkflowService {
         queryRunner.manager.create(Status, {
           workflow_id: savedWorkflow.id,
           name: s.name,
-          color: s.color,
           is_start: s.isInitial,
           is_final: s.isFinal,
           created_by: user_id,
@@ -181,253 +185,167 @@ export class WorkflowService {
     }
   }
 
-  // async createWorkflow(dto: CreateWorkflowDto, user_id: number) {
-  //   const queryRunner = this.dataSource.createQueryRunner();
-  //   await queryRunner.connect();
-  //   await queryRunner.startTransaction();
+  async updateWorkflow(id: number, dto: CreateWorkflowDto, user_id: number) {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
 
-  //   try {
-  //     const {
-  //       name,
-  //       key,
-  //       version,
-  //       projectId,
-  //       description,
-  //       statuses,
-  //       transitions,
-  //     } = dto;
+    try {
+      const {
+        name,
+        key,
+        version,
+        projectId,
+        description,
+        statuses,
+        transitions,
+      } = dto;
 
-  //     // 1️⃣ CREATE workflow
-  //     const workflow = queryRunner.manager.create(Workflow, {
-  //       name,
-  //       key,
-  //       version,
-  //       project_id: projectId,
-  //       description,
-  //       created_by: user_id,
-  //       updated_by: user_id,
-  //     });
+      // 1️⃣ Check workflow tồn tại và thuộc user
+      const workflow = await queryRunner.manager.findOne(Workflow, {
+        where: { id: id },
+      });
 
-  //     const savedWorkflow = await queryRunner.manager.save(Workflow, workflow);
+      if (!workflow) {
+        throw new NotFoundException('Workflow not found or not owned by user.');
+      }
 
-  //     // 2️⃣ CREATE all statuses
-  //     const statusEntities = statuses.map((s) =>
-  //       queryRunner.manager.create(Status, {
-  //         workflow_id: savedWorkflow.id,
-  //         name: s.name,
-  //         color: s.color,
-  //         is_start: s.isInitial,
-  //         is_final: s.isFinal,
-  //         created_by: user_id,
-  //       }),
-  //     );
+      // 2️⃣ UPDATE workflow
+      workflow.name = name;
+      workflow.key = key || '';
+      workflow.version = version || '';
+      workflow.project_id = projectId || 0;
+      workflow.description = description || '';
+      workflow.updated_by = user_id;
 
-  //     const savedStatuses = await queryRunner.manager.save(
-  //       Status,
-  //       statusEntities,
-  //     );
+      await queryRunner.manager.save(Workflow, workflow);
 
-  //     // Create map name → id
-  //     const statusMap = new Map<string, number>();
+      // 3️⃣ Fetch statuses và transitions đang có trong DB
+      const existingStatuses = await queryRunner.manager.find(Status, {
+        where: { workflow_id: id },
+      });
 
-  //     statuses.forEach((clientStatus, index) => {
-  //       const saved = savedStatuses[index];
+      const existingTransitions = await queryRunner.manager.find(Transition, {
+        where: { workflow_id: id },
+      });
 
-  //       // map name FE -> id thật
-  //       statusMap.set(clientStatus.name.trim().toLowerCase(), saved.id);
+      const existingStatusIds = existingStatuses.map((s) => s.id);
+      const incomingStatusIds = statuses.map((s) => Number(s.id));
 
-  //       // map id FE -> id thật (id FE có thể là số random)
-  //       if (clientStatus.id) {
-  //         statusMap.set(String(clientStatus.id), saved.id);
-  //       }
-  //     });
+      const existingTransitionIds = existingTransitions.map((t) => t.id);
+      const incomingTransitionIds = transitions.map((t) => String(t.id));
 
-  //     // 3️⃣ Lưu Transition
-  //     const transitionEntities = transitions.map((t) =>
-  //       queryRunner.manager.create(Transition, {
-  //         workflow_id: savedWorkflow.id,
-  //         name: t.name,
-  //         status_id_from: t.status_id_from
-  //           ? statusMap.get(String(t.status_id_from))
-  //           : statusMap.get(t.from?.trim().toLowerCase()),
-  //         status_id_to: t.status_id_to
-  //           ? statusMap.get(String(t.status_id_to))
-  //           : statusMap.get(t.to?.trim().toLowerCase()),
-  //         created_by: user_id,
-  //       }),
-  //     );
-  //     const savedTransitions = await queryRunner.manager.save(
-  //       Transition,
-  //       transitionEntities,
-  //     );
+      // 4️⃣ DELETE status không còn trong FE
+      const statusToDelete = existingStatuses.filter(
+        (s) => !incomingStatusIds.includes(s.id),
+      );
+      if (statusToDelete.length > 0) {
+        await queryRunner.manager.remove(Status, statusToDelete);
+      }
 
-  //     await queryRunner.commitTransaction();
+      const savedStatuses: any[] = [];
 
-  //     return {
-  //       workflow: savedWorkflow,
-  //       statuses: savedStatuses,
-  //       transitions: savedTransitions,
-  //     };
-  //   } catch (error) {
-  //     await queryRunner.rollbackTransaction();
-  //     throw error;
-  //   } finally {
-  //     await queryRunner.release();
-  //   }
-  // }
+      for (const s of statuses) {
+        const statusData = {
+          name: s.name,
+          is_start: s.isInitial,
+          is_final: s.isFinal,
+          created_by: user_id,
+          workflow_id: id,
+        };
 
-  // async updateWorkflow(id: number, dto: CreateWorkflowDto, user_id: number) {
-  //   const queryRunner = this.dataSource.createQueryRunner();
-  //   await queryRunner.connect();
-  //   await queryRunner.startTransaction();
+        if (existingStatusIds.includes(Number(s.id))) {
+          // Update existing status
+          const updatedStatus = await queryRunner.manager.update(
+            Status,
+            { id: s.id },
+            statusData,
+          );
+          savedStatuses.push(updatedStatus);
+        } else {
+          // Insert new status
+          const newStatus = queryRunner.manager.create(Status, statusData);
+          await queryRunner.manager.save(Status, newStatus);
+          savedStatuses.push(newStatus);
+        }
+      }
 
-  //   try {
-  //     const {
-  //       name,
-  //       key,
-  //       version,
-  //       projectId,
-  //       description,
-  //       statuses,
-  //       transitions,
-  //     } = dto;
+      // Map name → status_id
+      const statusMap = new Map<string, number>();
+      const updatedDBStatuses = await queryRunner.manager.find(Status, {
+        where: { workflow_id: id },
+      });
 
-  //     // 1️⃣ Check workflow tồn tại và thuộc user
-  //     const workflow = await queryRunner.manager.findOne(Workflow, {
-  //       where: { id, created_by: user_id },
-  //     });
+      updatedDBStatuses.forEach((s) => statusMap.set(s.name, s.id));
 
-  //     if (!workflow) {
-  //       throw new NotFoundException('Workflow not found or not owned by user.');
-  //     }
+      // 6️⃣ DELETE transitions không còn trong FE
+      const transitionToDelete = existingTransitions.filter(
+        (t) => !incomingTransitionIds.includes(String(t.id)),
+      );
 
-  //     // 2️⃣ UPDATE workflow
-  //     workflow.name = name;
-  //     workflow.key = key || '';
-  //     workflow.version = version || '';
-  //     workflow.project_id = projectId || 0;
-  //     workflow.description = description || '';
-  //     workflow.updated_by = user_id;
+      if (transitionToDelete.length > 0) {
+        await queryRunner.manager.remove(Transition, transitionToDelete);
+      }
 
-  //     await queryRunner.manager.save(Workflow, workflow);
+      // // 7️⃣ UPDATE hoặc INSERT transition
+      const savedTransitions: any[] = [];
 
-  //     // 3️⃣ Fetch statuses và transitions đang có trong DB
-  //     const existingStatuses = await queryRunner.manager.find(Status, {
-  //       where: { workflow_id: id },
-  //     });
+      for (const t of transitions) {
+        const isExisting = existingTransitionIds.includes(Number(t.id));
+        const statusFromId = statusMap.get(t.from);
+        const statusToId = statusMap.get(t.to);
 
-  //     const existingTransitions = await queryRunner.manager.find(Transition, {
-  //       where: { workflow_id: id },
-  //     });
+        if (!statusFromId || !statusToId) {
+          throw new Error(
+            'Invalid status references: status_id_from or status_id_to is missing.',
+          );
+        }
 
-  //     const existingStatusIds = existingStatuses.map((s) => s.id);
-  //     const incomingStatusIds = statuses.map((s) => Number(s.id));
+        const payload: any = {
+          name: t.name,
+          workflow_id: id,
+          status_id_from: statusFromId,
+          status_id_to: statusToId,
+          created_by: user_id,
+        };
 
-  //     const existingTransitionIds = existingTransitions.map((t) => t.id);
-  //     const incomingTransitionIds = transitions.map((t) => String(t.id));
+        if (isExisting) {
+          // Update existing transition
+          const updatedTransition = await queryRunner.manager.update(
+            Transition,
+            { id: t.id },
+            payload,
+          );
+          savedTransitions.push(updatedTransition);
+        } else {
+          // Insert new transition
 
-  //     // 4️⃣ DELETE status không còn trong FE
-  //     const statusToDelete = existingStatuses.filter(
-  //       (s) => !incomingStatusIds.includes(s.id),
-  //     );
-  //     if (statusToDelete.length > 0) {
-  //       await queryRunner.manager.remove(Status, statusToDelete);
-  //     }
+          const newTransition = queryRunner.manager.create(Transition, payload);
+          await queryRunner.manager.save(Transition, newTransition);
 
-  //     // 5️⃣ UPDATE hoặc INSERT status
-  //     const savedStatuses = [];
+          savedTransitions.push(newTransition);
+        }
+      }
 
-  //     for (const s of statuses) {
-  //       if (existingStatusIds.includes(Number(s.id))) {
-  //         // Update
-  //         await queryRunner.manager.update(
-  //           Status,
-  //           { id: s.id },
-  //           {
-  //             name: s.name,
-  //             color: s.color,
-  //             is_start: s.isInitial,
-  //             is_final: s.isFinal,
-  //             updated_by: user_id,
-  //           },
-  //         );
-  //         savedStatuses.push(s);
-  //       } else {
-  //         // Insert new
-  //         const newStatus = queryRunner.manager.create(Status, {
-  //           workflow_id: id,
-  //           name: s.name,
-  //           color: s.color,
-  //           is_start: s.isInitial,
-  //           is_final: s.isFinal,
-  //           created_by: user_id,
-  //         });
-  //         const saved = await queryRunner.manager.save(Status, newStatus);
-  //         savedStatuses.push(saved);
-  //       }
-  //     }
+      const updatedDBTransitions = await queryRunner.manager.find(Transition, {
+        where: { workflow_id: id },
+      });
 
-  //     // Map name → status_id
-  //     const statusMap = new Map<string, number>();
-  //     const updatedDBStatuses = await queryRunner.manager.find(Status, {
-  //       where: { workflow_id: id },
-  //     });
+      // 8️⃣ Commit
+      await queryRunner.commitTransaction();
 
-  //     updatedDBStatuses.forEach((s) => statusMap.set(s.name, s.id));
-
-  //     // 6️⃣ DELETE transitions không còn trong FE
-  //     const transitionToDelete = existingTransitions.filter(
-  //       (t) => !incomingTransitionIds.includes(String(t.id)),
-  //     );
-
-  //     if (transitionToDelete.length > 0) {
-  //       await queryRunner.manager.remove(Transition, transitionToDelete);
-  //     }
-
-  //     // 7️⃣ UPDATE hoặc INSERT transition
-  //     const savedTransitions = [];
-
-  //     for (const t of transitions) {
-  //       const isExisting = existingTransitionIds.includes(Number(t.id));
-
-  //       const payload: any = {
-  //         name: t.name,
-  //         workflow_id: id,
-  //         status_id_from: t.status_id_from ?? statusMap.get(t.from),
-  //         status_id_to: t.status_id_to ?? statusMap.get(t.to),
-  //         updated_by: user_id,
-  //       };
-
-  //       if (isExisting) {
-  //         await queryRunner.manager.update(Transition, { id: t.id }, payload);
-  //         savedTransitions.push(t);
-  //       } else {
-  //         payload.created_by = user_id;
-
-  //         const newTransition = queryRunner.manager.create(Transition, payload);
-  //         const saved = await queryRunner.manager.save(
-  //           Transition,
-  //           newTransition,
-  //         );
-  //         savedTransitions.push(saved);
-  //       }
-  //     }
-
-  //     // 8️⃣ Commit
-  //     await queryRunner.commitTransaction();
-
-  //     return {
-  //       workflow,
-  //       statuses: updatedDBStatuses,
-  //       transitions: savedTransitions,
-  //     };
-  //   } catch (error) {
-  //     await queryRunner.rollbackTransaction();
-  //     throw error;
-  //   } finally {
-  //     await queryRunner.release();
-  //   }
-  // }
+      return {
+        workflow,
+        statuses: updatedDBStatuses,
+        transitions: updatedDBTransitions,
+      };
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
+  }
 
   async remove(id: number, user_id: number) {
     const workflow = await this.workflowRepo.findOne({

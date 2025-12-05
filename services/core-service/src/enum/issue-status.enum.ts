@@ -4,4 +4,5 @@ export enum IssueStatus {
   REVIEW = 'review',
   DONE = 'done',
   CANCELLED = 'cancelled',
+  REOPEN = 'reopen',
 }

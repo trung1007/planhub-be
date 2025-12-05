@@ -35,15 +35,15 @@ export class WorkflowController {
     return this.workflowService.createWorkflow(payload, user_id);
   }
 
-  // @Patch(':id')
-  // async updatedWorkflow(
-  //   @Param('id') id: number,
-  //   @Body() payload: CreateWorkflowDto,
-  //   @Req() req,
-  // ) {
-  //   const user_id = Number(req.headers['x-user-id']);
-  //   return this.workflowService.updateWorkflow(id, payload, user_id);
-  // }
+  @Patch(':id')
+  async updatedWorkflow(
+    @Param('id') id: number,
+    @Body() payload: CreateWorkflowDto,
+    @Req() req,
+  ) {
+    const user_id = Number(req.headers['x-user-id']);
+    return this.workflowService.updateWorkflow(id, payload, user_id);
+  }
 
   @Delete(':id')
   remove(@Param('id') id: number, @Req() req) {

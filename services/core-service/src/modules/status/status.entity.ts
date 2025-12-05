@@ -19,8 +19,6 @@ export class Status {
   @Column({ length: 255 })
   name: string;
 
-  @Column()
-  color:string
 
   @Column({ default: false })
   is_start: boolean;

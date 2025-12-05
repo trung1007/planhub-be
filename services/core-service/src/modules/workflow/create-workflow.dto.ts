@@ -4,7 +4,10 @@ import {
   IsString,
   IsOptional,
   IsNumber,
+  IsBoolean,
+  IsEnum,
 } from 'class-validator';
+import { IssueStatus } from 'src/enum/issue-status.enum';
 
 export class CreateWorkflowDto {
   @IsNotEmpty()
@@ -29,20 +32,47 @@ export class CreateWorkflowDto {
 
   // Danh sách status
   @IsArray()
-  statuses: {
-    name: string;
-    color: string;
-    isInitial: boolean;
-    isFinal: boolean;
-  }[];
+  statuses: CreateStatusDto[];
 
   // Danh sách transition
   @IsArray()
-  transitions: {
-    name: string;
-    from:string,
-    to:string,
-    status_id_from: number;
-    status_id_to: number;
-  }[];
+  transitions: CreateTransitionDto[];
+}
+
+export class CreateStatusDto {
+  @IsOptional()
+  @IsNumber()
+  id?: number;
+
+  @IsEnum(IssueStatus) // Enum validation to ensure only valid status values
+  name: IssueStatus;
+
+
+  @IsBoolean()
+  isInitial: boolean;
+
+  @IsBoolean()
+  isFinal: boolean;
+
+}
+
+export class CreateTransitionDto {
+  @IsOptional()
+  @IsNumber()
+  id?: number;
+
+  @IsString()
+  name: string;
+
+  @IsString()
+  from: string;
+
+  @IsString()
+  to: string;
+
+  @IsNumber()
+  status_id_from: number;
+
+  @IsNumber()
+  status_id_to: number;
 }

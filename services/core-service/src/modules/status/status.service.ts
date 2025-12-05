@@ -26,7 +26,6 @@ export class StatusService {
     const status = this.statusRepo.create({
       workflow_id: dto.workflow_id,
       name: dto.name,
-      color: dto.color,
       is_start: dto.is_start,
       is_final: dto.is_final,
       created_by: user_id,
