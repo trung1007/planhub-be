@@ -12,6 +12,8 @@ import { Release } from '../release/release.entity';
 import { Project } from '../project/project.entity';
 import { IssueHistoryModule } from '../issue-history/issue-history.module';
 import { IssueHistory } from '../issue-history/issue-history.entity';
+import { Workflow } from '../workflow/workflow.entity';
+import { Status } from '../status/status.entity';
 
 @Module({
   imports: [
@@ -24,6 +26,8 @@ import { IssueHistory } from '../issue-history/issue-history.entity';
       Project,
       Release,
       IssueHistory,
+      Workflow,
+      Status,
     ]),
     SharedModule,
     IssueHistoryModule,

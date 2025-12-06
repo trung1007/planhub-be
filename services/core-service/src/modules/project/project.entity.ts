@@ -5,6 +5,7 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   OneToMany,
+  OneToOne,
 } from 'typeorm';
 import { ProjectMember } from '../project-member/project-member.entity';
 import { Workflow } from '../workflow/workflow.entity';
@@ -43,6 +44,8 @@ export class Project {
   @OneToMany(() => Release, (r) => r.project)
   releases: Release[];
 
-  @OneToMany(() => Workflow, (wf) => wf.project)
-  workflows: Workflow[];
+  @OneToOne(() => Workflow, (wf) => wf.project, {
+    cascade: true,
+  })
+  workflow: Workflow;
 }

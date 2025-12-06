@@ -7,6 +7,7 @@ import {
   UpdateDateColumn,
   OneToMany,
   JoinColumn,
+  OneToOne,
 } from 'typeorm';
 import { Project } from '../project/project.entity';
 import { Status } from '../status/status.entity';
@@ -17,7 +18,7 @@ export class Workflow {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column()
+  @Column({ unique: true })
   project_id: number;
 
   @Column({ length: 255 })
@@ -45,7 +46,7 @@ export class Workflow {
   updated_at: Date;
 
   // ============= Relations =============
-  @ManyToOne(() => Project, (p) => p.workflows, { onDelete: 'CASCADE' })
+  @OneToOne(() => Project, (p) => p.workflow, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'project_id' })
   project: Project;
 
@@ -58,6 +59,4 @@ export class Workflow {
     cascade: true,
   })
   transitions: Transition[];
-
-  // Chờ bạn bổ sung quan hệ (workflow steps? workflow transitions?)
 }

@@ -21,6 +21,8 @@ import {
   HistoryEntity,
   IssueHistory,
 } from '../issue-history/issue-history.entity';
+import { Workflow } from '../workflow/workflow.entity';
+import { Status } from '../status/status.entity';
 
 @Injectable()
 export class IssueService {
@@ -34,6 +36,12 @@ export class IssueService {
     private readonly releaseRepo: Repository<Release>,
     @InjectRepository(Project)
     private readonly projectRepo: Repository<Project>,
+
+    @InjectRepository(Workflow)
+    private readonly workflowRepo: Repository<Workflow>,
+
+    @InjectRepository(Status)
+    private readonly statusRepo: Repository<Status>,
 
     @InjectRepository(IssueHistory)
     private readonly issueHistoryRepo: Repository<IssueHistory>,
@@ -145,6 +153,18 @@ export class IssueService {
       ? await this.projectRepo.findOne({ where: { id: release.project_id } })
       : null;
 
+    const workflow = release?.project_id
+      ? await this.workflowRepo.findOne({
+          where: { project_id: release?.project_id },
+        })
+      : null;
+
+    const statusList = workflow?.id
+      ? await this.statusRepo.find({
+          where: { workflow_id: workflow.id },
+        })
+      : [];
+
     const issueResponse = {
       ...issue,
       assigneeId: issue.assignee_id,
@@ -168,6 +188,11 @@ export class IssueService {
       createdName: createdUser?.fullName,
 
       subtasksNum: issue.subtasks?.length || 0,
+
+      statusList: statusList.map((status) => ({
+        id: status.id,
+        name: status.name,
+      })),
     };
 
     return issueResponse;

@@ -15,9 +15,14 @@ import { CreateStatusDto, UpdateStatusDto } from './dto/status.dto';
 export class StatusController {
   constructor(private readonly statusService: StatusService) {}
 
-  @Get('workflow/:workflowId')
-  findAll(@Param('workflowId') workflowId: number) {
-    return this.statusService.findAll(workflowId);
+  // @Get('workflow/:workflowId')
+  // findAll(@Param('workflowId') workflowId: number) {
+  //   return this.statusService.findAll(workflowId);
+  // }
+
+  @Get('sprint/:sprintId') // API để lấy list status theo sprintId
+  findAllBySprintId(@Param('sprintId') sprintId: number) {
+    return this.statusService.findAllBySprintId(sprintId);
   }
 
   @Get(':id')
