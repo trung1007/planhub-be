@@ -34,6 +34,11 @@ export class SprintController {
     return this.sprintService.findList();
   }
 
+  @Get('active-sprints/:projectId')
+  async findActiveSprints(@Param('projectId') projectId: number) {
+    return this.sprintService.findActiveSprintByProject(projectId);
+  }
+
   @Get('active-sprints')
   findActiveSprint() {
     return this.sprintService.findActiveSprint();

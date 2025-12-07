@@ -23,10 +23,11 @@ export class IssueController {
     return this.issueService.findAll(page, limit);
   }
 
-  // @Get('all-ids')
-  // getAllIds() {
-  //   return this.issueService.getAllIds();
-  // }
+  @Get('scrum')
+  getScrumboard(){
+    return this.issueService.getScrumboard();
+  }
+
 
   @Get('issue-list')
   getIssueList() {

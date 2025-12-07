@@ -23,6 +23,7 @@ import {
 } from '../issue-history/issue-history.entity';
 import { Workflow } from '../workflow/workflow.entity';
 import { Status } from '../status/status.entity';
+import { Transition } from '../transition/transition.entity';
 
 @Injectable()
 export class IssueService {
@@ -42,6 +43,9 @@ export class IssueService {
 
     @InjectRepository(Status)
     private readonly statusRepo: Repository<Status>,
+
+    @InjectRepository(Transition)
+    private readonly transitionRepo: Repository<Transition>,
 
     @InjectRepository(IssueHistory)
     private readonly issueHistoryRepo: Repository<IssueHistory>,
@@ -123,6 +127,110 @@ export class IssueService {
     };
   }
 
+  async getScrumboard() {
+    // Truy vấn tất cả các release của project và sprint đang active
+    const releases = await this.releaseRepo.find({
+      relations: ['sprints', 'sprints.issues', 'project'],
+    });
+
+    // Lọc các sprint đang active
+    const activeSprints = releases
+      .flatMap((release) => release.sprints || []) // Kiểm tra nếu release.sprints tồn tại
+      .filter((sprint) => sprint.is_active);
+
+    if (activeSprints.length === 0) {
+      throw new NotFoundException('No active sprints found');
+    }
+
+    const issuesByProject = await Promise.all(
+      releases.map(async (release) => {
+        // Kiểm tra xem release có project hay không
+        if (!release.project) {
+          throw new NotFoundException(
+            'Release does not have associated project',
+          );
+        }
+
+        // Lọc sprint đang active trong release
+        const activeSprintsForProject = release.sprints.filter(
+          (sprint) => sprint.is_active,
+        );
+
+        // Lấy các issue trong các sprint active của project
+        const issuesForProject = await Promise.all(
+          activeSprintsForProject.map(async (sprint) => {
+            const issues = await this.issueRepo.find({
+              where: { sprint_id: sprint.id },
+              relations: ['sprint'],
+            });
+
+            return issues.map((issue) => ({
+              id: issue.id,
+              name: issue.name,
+              summary: issue.summary,
+              type: issue.type,
+              tags: issue.tags,
+              status: issue.status,
+              priority: issue.priority,
+              sprintId: issue.sprint?.id,
+              sprintName: issue.sprint?.name,
+              numOfAttachment: issue.attachments?.length ?? 0,
+              numOfSubtask: issue.subtasks?.length ?? 0,
+              numOfComment: issue.comments?.length ?? 0,
+            }));
+          }),
+        );
+
+        if (issuesForProject.flat().length === 0) {
+          return null;
+        }
+
+        const workflow = await this.workflowRepo.findOne({
+          where: { project_id: release.project.id },
+        });
+
+        if (!workflow) {
+          throw new NotFoundException('No workflow found for this project');
+        }
+
+        const statuses = await this.statusRepo.find({
+          where: { workflow_id: workflow.id },
+        });
+
+        const transitions = await this.transitionRepo.find({
+          where: { workflow_id: workflow.id },
+        });
+
+        return {
+          project: {
+            id: release.project.id,
+            name: release.project.name,
+          },
+          issues: issuesForProject.flat(),
+          workflow: {
+            status: statuses.map((status) => ({
+              id: status.id,
+              name: status.name,
+              isInit: status.is_start,
+              isFinal: status.is_final,
+            })),
+            transition: transitions.map((transition) => ({
+              id: transition.id,
+              statusIdFrom: transition.status_id_from,
+              statusIdTo: transition.status_id_to,
+            })),
+          },
+        };
+      }),
+    );
+
+    const filteredIssuesByProject = issuesByProject.filter(
+      (project) => project !== null,
+    );
+
+    return filteredIssuesByProject;
+  }
+
   async findOne(id: number) {
     const issue = await this.issueRepo.findOne({
       where: { id },
@@ -180,6 +288,7 @@ export class IssueService {
       activeSprint: issue.sprint.is_active ? issue.sprint.name : null,
       releaseName: release?.name,
       projectName: project?.name,
+      projectId: release?.project_id,
 
       parentIssueId: issue.parent_issue_id,
       parentIssueName: issue.parent?.name ?? null,
@@ -271,16 +380,6 @@ export class IssueService {
       items,
     };
   }
-
-  // async getAllIds(): Promise<{ ids: number[] }> {
-  //   const list = await this.issueRepo.find({
-  //     select: ['id'],
-  //   });
-
-  //   return {
-  //     ids: list.map((i) => i.id),
-  //   };
-  // }
 
   async getListIssue() {
     return this.issueRepo.find({

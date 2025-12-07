@@ -14,6 +14,7 @@ import { IssueHistoryModule } from '../issue-history/issue-history.module';
 import { IssueHistory } from '../issue-history/issue-history.entity';
 import { Workflow } from '../workflow/workflow.entity';
 import { Status } from '../status/status.entity';
+import { Transition } from '../transition/transition.entity';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { Status } from '../status/status.entity';
       IssueHistory,
       Workflow,
       Status,
+      Transition,
     ]),
     SharedModule,
     IssueHistoryModule,

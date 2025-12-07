@@ -18,7 +18,6 @@ export class SprintService {
 
     @InjectRepository(Release)
     private readonly releaseRepo: Repository<Release>,
-
   ) {}
 
   async create(dto: ActionSprintDto) {
@@ -98,6 +97,18 @@ export class SprintService {
       select: ['id', 'name'],
       order: { name: 'ASC' },
     });
+  }
+
+  async findActiveSprintByProject(projectId: number) {
+    return this.sprintRepo
+      .createQueryBuilder('sprint')
+      .leftJoinAndSelect('sprint.release', 'release') 
+      .leftJoinAndSelect('release.project', 'project') 
+      .where('project.id = :projectId', { projectId }) 
+      .andWhere('sprint.is_active = :isActive', { isActive: true })
+      .orderBy('sprint.name', 'ASC') 
+      .select(['sprint.id', 'sprint.name', 'sprint.is_active'])
+      .getMany();
   }
 
   async findActiveSprint() {
