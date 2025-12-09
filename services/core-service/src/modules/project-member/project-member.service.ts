@@ -19,9 +19,33 @@ export class ProjectMemberService {
   ) {}
 
   /** ===================== CREATE ===================== */
-  async create(dto: ActionProjectMemberDto) {
-    const [day, month, year] = dto.joinDate.split('-');
 
+  async create(dto: ActionProjectMemberDto) {
+    const exists = await this.memberRepo.findOne({
+      where: {
+        project_id: dto.projectId,
+        user_id: dto.userId,
+        role_id: dto.roleId,
+      },
+      relations: ['project'],
+    });
+
+    if (exists) {
+      const [user, role] = await Promise.all([
+        this.userProxy.getUserById(dto.userId).catch(() => null),
+        this.userProxy.getRoleById(dto.roleId).catch(() => null),
+      ]);
+
+      const projectName = exists.project?.name ?? `Project ${dto.projectId}`;
+      // const userName = user?.fullName || user?.username || `User ${dto.userId}`;
+      const roleName = role?.key || `Role ${dto.roleId}`;
+
+      throw new BadRequestException(
+        `This user already has role "${roleName}" in project "${projectName}"`,
+      );
+    }
+
+    const [day, month, year] = dto.joinDate.split('-');
     const joinDate = new Date(Number(year), Number(month) - 1, Number(day));
 
     if (isNaN(joinDate.getTime())) {
@@ -39,6 +63,13 @@ export class ProjectMemberService {
     });
 
     return await this.memberRepo.save(member);
+  }
+
+  async getRoleByUserId(userId: number) {
+    return await this.memberRepo.find({
+      where: { user_id: userId },
+      select: ['id', 'project_id', 'role_id'],
+    });
   }
 
   /** ===================== FIND ALL (with filter) ===================== */
@@ -104,9 +135,10 @@ export class ProjectMemberService {
   }
 
   /** ===================== UPDATE ===================== */
-  async update(id: number, dto: ActionProjectMemberDto) {
-    const [day, month, year] = dto.joinDate.split('-');
 
+  async update(id: number, dto: ActionProjectMemberDto) {
+    // ========================= Validate join date =========================
+    const [day, month, year] = dto.joinDate.split('-');
     const joinDate = new Date(Number(year), Number(month) - 1, Number(day));
 
     if (isNaN(joinDate.getTime())) {
@@ -114,14 +146,42 @@ export class ProjectMemberService {
         'Invalid joinDate format. Expect DD-MM-YYYY.',
       );
     }
+
+    // ========================= Find existing member =========================
     const member = await this.findOne(id);
-    Object.assign(member, {
-      project_id: dto.projectId,
-      user_id: dto.userId,
-      role_id: dto.roleId,
-      created_by: dto.createdId,
-      join_date: joinDate,
+
+    // ========================= Check uniqueness before update =========================
+    const duplicate = await this.memberRepo.findOne({
+      where: {
+        project_id: dto.projectId,
+        user_id: dto.userId,
+        role_id: dto.roleId,
+      },
+      relations: ['project'],
     });
+
+    // Nếu tìm thấy duplicate và nó KHÔNG PHẢI LÀ chính bản ghi đang update
+    if (duplicate && duplicate.id !== id) {
+      const [user, role] = await Promise.all([
+        this.userProxy.getUserById(dto.userId).catch(() => null),
+        this.userProxy.getRoleById(dto.roleId).catch(() => null),
+      ]);
+
+      const projectName = duplicate.project?.name ?? `Project ${dto.projectId}`;
+      const userName = user?.fullName || user?.username || `User ${dto.userId}`;
+      const roleName = role?.key || `Role ${dto.roleId}`;
+
+      throw new BadRequestException(
+        `Member already exists: ${userName} already has role "${roleName}" in project "${projectName}".`,
+      );
+    }
+    member.project_id = dto.projectId;
+    member.user_id = dto.userId;
+    member.role_id = dto.roleId;
+    member.created_by = dto.createdId;
+    member.join_date = joinDate;
+
+    // ========================= Save =========================
     return await this.memberRepo.save(member);
   }
 

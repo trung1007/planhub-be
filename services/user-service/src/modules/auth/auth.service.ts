@@ -14,6 +14,7 @@ import { LoginDto } from './dto/login.dto';
 import { MailerService } from '@nestjs-modules/mailer';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { RegisterDto } from './dto/register.dto';
+import { CoreServiceProxy } from 'src/shared/core-service.proxy';
 
 @Injectable()
 export class AuthService {
@@ -21,6 +22,7 @@ export class AuthService {
     @InjectRepository(User) private readonly userRepo: Repository<User>,
     private readonly jwtService: JwtService,
     private readonly mailerService: MailerService,
+    private readonly coreProxy: CoreServiceProxy,
   ) {}
 
   async validateUser(
@@ -65,11 +67,14 @@ export class AuthService {
 
     await this.userRepo.update(user.id, { refreshToken: refresh_token });
 
+    const projectMembers = await this.coreProxy.getProjectMembers(user.id);
+
     return {
       user: {
         id: user.id,
         email: user.email,
         username: user.username,
+        projectMembers
       },
       access_token,
       refresh_token,
@@ -147,7 +152,6 @@ export class AuthService {
     try {
       payload = await this.jwtService.verifyAsync(refreshToken);
     } catch (err) {
-     
       throw new UnauthorizedException('Refresh token không hợp lệ');
     }
 

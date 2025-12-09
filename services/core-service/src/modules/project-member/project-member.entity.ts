@@ -6,10 +6,12 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   JoinColumn,
+  Unique,
 } from 'typeorm';
 import { Project } from '../project/project.entity';
 
 @Entity('project_member')
+@Unique(['project_id', 'user_id', 'role_id']) 
 export class ProjectMember {
   @PrimaryGeneratedColumn()
   id: number;

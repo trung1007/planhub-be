@@ -5,6 +5,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from '../user/user.entity';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { CoreServiceProxy } from 'src/shared/core-service.proxy';
+import { HttpModule } from '@nestjs/axios';
 
 @Module({
   imports: [
@@ -18,8 +20,9 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
         signOptions: { expiresIn: '1h' },
       }),
     }),
+    HttpModule
   ],
   controllers: [AuthController],
-  providers: [AuthService],
+  providers: [AuthService, CoreServiceProxy],
 })
 export class AuthModule {}

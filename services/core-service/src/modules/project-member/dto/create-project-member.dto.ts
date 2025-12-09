@@ -11,7 +11,7 @@ export class ActionProjectMemberDto {
 
   @IsNotEmpty()
   @IsInt()
-  projectId?: number;
+  projectId: number;
 
   @IsString()
   joinDate: string;

@@ -21,6 +21,11 @@ export class ProjectMemberController {
     return this.service.create(dto);
   }
 
+  @Get('member-role/:userId')
+  getRoleByUserId(@Param('userId') userId:number ){
+    return this.service.getRoleByUserId(userId);
+  }
+
   /** ===================== GET LIST ===================== */
   @Get()
   findAll(@Query('page') page: number = 1, @Query('limit') limit: number = 10) {
