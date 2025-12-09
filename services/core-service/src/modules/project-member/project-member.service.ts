@@ -57,22 +57,29 @@ export class ProjectMemberService {
     const items: ProjectMemberListDto[] = [];
 
     for (const m of members) {
-      const user = await this.userProxy.getUserById(m.user_id);
-      const role = await this.userProxy.getRoleById(m.role_id);
-      const createdUser = await this.userProxy.getUserById(m.created_by);
+      const [user, role, createdUser] = await Promise.all([
+        this.userProxy.getUserById(m.user_id).catch(() => null),
+        this.userProxy.getRoleById(m.role_id).catch(() => null),
+        this.userProxy.getUserById(m.created_by).catch(() => null),
+      ]);
+
       items.push({
         id: m.id,
         projectName: m.project?.name ?? null,
         projectId: m.project_id,
-        fullName: user.fullName,
-        username: user.username,
-        userId: m.user_id,
-        phoneNumber: user.phoneNumber,
-        email: user.email,
-        role: role.key,
-        roleId: m.role_id,
+
+        fullName: user?.fullName ?? null,
+        username: user?.username ?? null,
+        userId: m?.user_id ?? null,
+        phoneNumber: user?.phoneNumber ?? null,
+        email: user?.email ?? null,
+
+        role: role?.key ?? null,
+        roleId: m.role_id ?? null,
+
         joinDate: m.join_date,
-        createdBy: createdUser.username,
+
+        createdBy: createdUser?.username ?? null,
       });
     }
 
