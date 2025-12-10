@@ -12,6 +12,7 @@ import { AttachmentModule } from './modules/attachment/attachment.module';
 import { CommentModule } from './modules/comment/comment.module';
 import { StatusModule } from './modules/status/status.module';
 import { TransitionModule } from './modules/transition/transition.module';
+import { EventHandlersModule } from './events/event-handlers.module';
 
 @Module({
   imports: [
@@ -37,8 +38,9 @@ import { TransitionModule } from './modules/transition/transition.module';
     AttachmentModule,
     CommentModule,
     WorkflowModule,
-    StatusModule, 
-    TransitionModule
+    StatusModule,
+    TransitionModule,
+    EventHandlersModule,
   ],
 })
 export class AppModule {}

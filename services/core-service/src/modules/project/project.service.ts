@@ -5,6 +5,7 @@ import { Project } from './project.entity';
 import { UserServiceProxy } from 'src/shared/user-service.proxy';
 import { ProjectListDto } from './dto/project-list.dto';
 import { CreateProjectDto } from './dto/create-project.dto';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
 @Injectable()
 export class ProjectService {
@@ -12,6 +13,7 @@ export class ProjectService {
     @InjectRepository(Project)
     private readonly repo: Repository<Project>,
     private readonly userProxy: UserServiceProxy,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   async create(dto: CreateProjectDto) {
@@ -94,6 +96,7 @@ export class ProjectService {
 
   async remove(id: number) {
     const project = await this.findOne(id);
+    this.eventEmitter.emit('project.deleted', { projectId: id });
     return this.repo.remove(project);
   }
 }

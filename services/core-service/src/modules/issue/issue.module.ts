@@ -3,7 +3,6 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Issue } from './issue.entity';
 import { Attachment } from '../attachment/attachment.entity';
 import { Comment } from '../comment/comment.entity';
-import { Subtask } from '../subtask/subtask.entity';
 import { IssueController } from './issue.controller';
 import { IssueService } from './issue.service';
 import { SharedModule } from 'src/shared/shared.module';
@@ -22,7 +21,6 @@ import { Transition } from '../transition/transition.entity';
       Issue,
       Attachment,
       Comment,
-      Subtask,
       Sprint,
       Project,
       Release,

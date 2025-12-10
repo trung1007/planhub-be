@@ -5,9 +5,10 @@ import { ReleaseService } from '../release/release.service';
 import { SprintController } from './sprint.controller';
 import { SprintService } from './sprint.service';
 import { Release } from '../release/release.entity';
+import { Issue } from '../issue/issue.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Sprint, Release])],
+  imports: [TypeOrmModule.forFeature([Sprint, Release, Issue])],
   controllers: [SprintController],
   providers: [SprintService],
   exports: [SprintService],

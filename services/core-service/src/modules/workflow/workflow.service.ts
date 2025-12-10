@@ -347,6 +347,16 @@ export class WorkflowService {
     }
   }
 
+  async removeByProject(projectId: number) {
+    const workflow = await this.workflowRepo.findOne({
+      where: { project_id: projectId },
+    });
+    if (!workflow) {
+      throw new NotFoundException('Workflow in this project not found');
+    }
+    return this.workflowRepo.remove(workflow);
+  }
+
   async remove(id: number, user_id: number) {
     const workflow = await this.workflowRepo.findOne({
       where: { id },

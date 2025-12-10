@@ -185,6 +185,20 @@ export class ProjectMemberService {
     return await this.memberRepo.save(member);
   }
 
+  async removeByProject(projectId: number) {
+    const members = await this.memberRepo.find({
+      where: { project_id: projectId },
+    });
+
+    if (!members || members.length === 0) {
+      return { deleted: 0 };
+    }
+
+    await this.memberRepo.remove(members);
+
+    return { deleted: members.length };
+  }
+
   /** ===================== DELETE ===================== */
   async remove(id: number) {
     const member = await this.findOne(id);

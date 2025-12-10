@@ -661,6 +661,35 @@ export class IssueService {
     };
   }
 
+  async removeByProject(projectId: number) {
+    const releases = await this.releaseRepo.find({
+      where: { project_id: projectId },
+      select: ['id'],
+    });
+
+    if (!releases.length) {
+      return { deleted: 0 };
+    }
+
+    const releaseIds = releases.map((r) => r.id);
+    const sprints = await this.sprintRepo.find({
+      where: { release_id: In(releaseIds) },
+      select: ['id'],
+    });
+
+    if (!sprints.length) {
+      return { deleted: 0 };
+    }
+
+    const sprintIds = sprints.map((s) => s.id);
+
+    const result = await this.issueRepo.delete({
+      sprint_id: In(sprintIds),
+    });
+
+    return { deleted: result.affected ?? 0 };
+  }
+
   async remove(id: number, user_id: number) {
     const issue = await this.issueRepo.findOne({ where: { id } });
 

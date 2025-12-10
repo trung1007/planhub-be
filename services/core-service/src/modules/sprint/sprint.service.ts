@@ -4,12 +4,13 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { formatDate } from 'src/utils/formatDate';
 import { Sprint } from './sprint.entity';
 import { ActionSprintDto } from './dto/action-sprint.dto';
 import { Release } from '../release/release.entity';
 import { SprintListDto } from './dto/sprint-list.dto';
+import { Issue } from '../issue/issue.entity';
 @Injectable()
 export class SprintService {
   constructor(
@@ -18,6 +19,9 @@ export class SprintService {
 
     @InjectRepository(Release)
     private readonly releaseRepo: Repository<Release>,
+
+    @InjectRepository(Issue)
+    private readonly issueRepo: Repository<Issue>,
   ) {}
 
   async create(dto: ActionSprintDto) {
@@ -72,16 +76,37 @@ export class SprintService {
       order: { release_id: 'ASC' },
     });
 
-    const items: SprintListDto[] = data.map((s) => ({
-      id: s.id,
-      releaseName: s.release?.name || null,
-      releaseId: s.release_id,
-      name: s.name,
-      key: s.key,
-      startDate: s.start_date,
-      endDate: s.end_date,
-      isActive: s.is_active,
-    }));
+    const items: SprintListDto[] = [];
+
+    for (const s of data) {
+      const issues = await this.issueRepo.find({
+        where: { sprint_id: s.id },
+        select: ['id'], 
+      });
+
+      items.push({
+        id: s.id,
+        releaseName: s.release?.name || null,
+        releaseId: s.release_id,
+        name: s.name,
+        key: s.key,
+        startDate: s.start_date,
+        endDate: s.end_date,
+        isActive: s.is_active,
+        numOfIssue: issues.length,
+      });
+    }
+
+    // const items: SprintListDto[] = data.map((s) => ({
+    //   id: s.id,
+    //   releaseName: s.release?.name || null,
+    //   releaseId: s.release_id,
+    //   name: s.name,
+    //   key: s.key,
+    //   startDate: s.start_date,
+    //   endDate: s.end_date,
+    //   isActive: s.is_active,
+    // }));
 
     return {
       items,
@@ -102,11 +127,11 @@ export class SprintService {
   async findActiveSprintByProject(projectId: number) {
     return this.sprintRepo
       .createQueryBuilder('sprint')
-      .leftJoinAndSelect('sprint.release', 'release') 
-      .leftJoinAndSelect('release.project', 'project') 
-      .where('project.id = :projectId', { projectId }) 
+      .leftJoinAndSelect('sprint.release', 'release')
+      .leftJoinAndSelect('release.project', 'project')
+      .where('project.id = :projectId', { projectId })
       .andWhere('sprint.is_active = :isActive', { isActive: true })
-      .orderBy('sprint.name', 'ASC') 
+      .orderBy('sprint.name', 'ASC')
       .select(['sprint.id', 'sprint.name', 'sprint.is_active'])
       .getMany();
   }
@@ -173,6 +198,25 @@ export class SprintService {
     });
 
     return await this.sprintRepo.save(sprint);
+  }
+
+  async removeByProject(projectId: number) {
+    const releases = await this.releaseRepo.find({
+      where: { project_id: projectId },
+      select: ['id'],
+    });
+
+    if (!releases.length) {
+      return { deleted: 0 };
+    }
+
+    const releaseIds = releases.map((r) => r.id);
+
+    const result = await this.sprintRepo.delete({
+      release_id: In(releaseIds),
+    });
+
+    return { deleted: result.affected ?? 0 };
   }
 
   async delete(id: number) {

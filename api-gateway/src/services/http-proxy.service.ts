@@ -122,13 +122,18 @@ export class HttpProxyService {
 
     let pattern: string | null = null;
 
-    if (path.startsWith('/user-service/roles')) {
-      pattern = 'CACHE:GET:/user-service/roles/*';
-    } else if (path.startsWith('/user-service/users')) {
-      pattern = 'CACHE:GET:/user-service/users/*';
-    } else if (path.startsWith('/user-service/role-permissions')) {
-      pattern = 'CACHE:GET:/user-service/role-permissions/*';
+    // if (path.startsWith('/user-service/roles')) {
+    //   pattern = 'CACHE:GET:/user-service/roles/*';
+    // } else if (path.startsWith('/user-service/users')) {
+    //   pattern = 'CACHE:GET:/user-service/users/*';
+    // } else if (path.startsWith('/user-service/role-permissions')) {
+    //   pattern = 'CACHE:GET:/user-service/role-permissions/*';
+    // }
+
+     if (path.startsWith('/user-service/')) {
+      pattern = `CACHE:GET:/user-service/*`;
     }
+
 
     if (path.startsWith('/core-service/')) {
       pattern = `CACHE:GET:/core-service/*`;

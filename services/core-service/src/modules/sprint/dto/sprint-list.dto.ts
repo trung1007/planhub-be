@@ -9,4 +9,5 @@ export class SprintListDto {
   startDate: Date;
   endDate: Date;
   isActive:boolean;
+  numOfIssue?:number
 }

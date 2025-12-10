@@ -159,6 +159,21 @@ export class ReleaseService {
     });
   }
 
+  async removeByProject(projectId: number) {
+    const releases = await this.releaseRepo.find({
+      where: { project_id: projectId },
+    });
+
+    if (!releases || releases.length === 0) {
+      return { deleted: 0 };
+    }
+
+    // Xóa tất cả release
+    await this.releaseRepo.remove(releases);
+
+    return { deleted: releases.length };
+  }
+
   async delete(id: number) {
     return this.releaseRepo.delete(id);
   }
