@@ -352,7 +352,8 @@ export class WorkflowService {
       where: { project_id: projectId },
     });
     if (!workflow) {
-      throw new NotFoundException('Workflow in this project not found');
+      // throw new NotFoundException('Workflow in this project not found');
+      return { deleted: 0 };
     }
     return this.workflowRepo.remove(workflow);
   }
