@@ -50,10 +50,16 @@ export class AuthService {
     const user = await this.validateUser(dto.password, dto.username, dto.email);
     if (!user) throw new UnauthorizedException('Invalid credentials');
 
+    let role = 'user';
+    if (user.email.toLocaleLowerCase().includes('admin') || user.username.toLocaleLowerCase().includes('admin')) {
+      role = 'admin';
+    }
+
     const payload = {
       id: user.id,
       email: user.email,
       username: user.username,
+      role: role,
     };
 
     const access_token = this.jwtService.sign(payload, {
@@ -67,14 +73,14 @@ export class AuthService {
 
     await this.userRepo.update(user.id, { refreshToken: refresh_token });
 
-    const projectMembers = await this.coreProxy.getProjectMembers(user.id);
+    // const projectMembers = await this.coreProxy.getProjectMembers(user.id);
 
     return {
       user: {
         id: user.id,
         email: user.email,
         username: user.username,
-        projectMembers
+        role: role ,
       },
       access_token,
       refresh_token,

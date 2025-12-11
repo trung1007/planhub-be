@@ -140,10 +140,20 @@ export class SprintService {
 
   async findActiveSprint() {
     return this.sprintRepo.find({
-      select: ['id', 'is_active', 'name'],
+      select: ['id', 'is_active', 'name', 'project_id'],
       where: { is_active: true },
       order: { name: 'ASC' },
     });
+  }
+
+  async findProjecIdBySprintId(sprintId?:number){
+    const sprint = await this.sprintRepo.findOne({
+      where:{id:sprintId}
+    })
+    if(!sprint){
+      return;
+    }
+    return sprint.project_id
   }
 
   async findOne(id: number) {

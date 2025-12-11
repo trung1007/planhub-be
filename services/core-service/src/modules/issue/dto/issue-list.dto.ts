@@ -18,6 +18,8 @@ export class IssueListDTO {
   reporterId: number | null;
   reporterName: string | null;
 
+
+  projectId: number | null
   sprintId: number | null;
   activeSprint: string | null;
 }

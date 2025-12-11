@@ -24,6 +24,7 @@ import {
 import { Workflow } from '../workflow/workflow.entity';
 import { Status } from '../status/status.entity';
 import { Transition } from '../transition/transition.entity';
+import { SprintService } from '../sprint/sprint.service';
 
 @Injectable()
 export class IssueService {
@@ -51,6 +52,8 @@ export class IssueService {
     private readonly issueHistoryRepo: Repository<IssueHistory>,
 
     private readonly historyService: IssueHistoryService,
+
+    private readonly sprintService: SprintService,
   ) {}
 
   async findAll(page: number = 1, limit: number = 10) {
@@ -92,7 +95,9 @@ export class IssueService {
         const reporter = i.reporter_id
           ? await this.userProxy.getUserById(i.reporter_id)
           : null;
-
+        const projectId = await this.sprintService.findProjecIdBySprintId(
+          i.sprint?.id,
+        );
         return {
           id: i.id,
           name: i.name,
@@ -111,6 +116,7 @@ export class IssueService {
           reporterId: i.reporter_id,
           reporterName: reporter?.username || null,
 
+          projectId: projectId || null,
           sprintId: i.sprint?.id || null,
           activeSprint: i.sprint.is_active ? i.sprint.name : null,
           // sprintName: i.sprint?.name || null,

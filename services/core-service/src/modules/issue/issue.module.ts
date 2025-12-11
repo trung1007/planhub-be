@@ -14,6 +14,7 @@ import { IssueHistory } from '../issue-history/issue-history.entity';
 import { Workflow } from '../workflow/workflow.entity';
 import { Status } from '../status/status.entity';
 import { Transition } from '../transition/transition.entity';
+import { SprintModule } from '../sprint/sprint.module';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { Transition } from '../transition/transition.entity';
     ]),
     SharedModule,
     IssueHistoryModule,
+    SprintModule
   ],
   controllers: [IssueController],
   providers: [IssueService],

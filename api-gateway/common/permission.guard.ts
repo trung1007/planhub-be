@@ -28,11 +28,15 @@ export class PermissionGuard implements CanActivate {
 
     const url = req.originalUrl.replace(/^\/api/, '');
 
-
-    // add account ADMIN later
-    if (url.startsWith('/core-service/projects') && req.method === 'GET') {
+    const isRoleAdmin = req?.user?.role === 'admin';
+    if (isRoleAdmin) {
       return true;
     }
+
+    // // add account ADMIN later
+    // if (url.startsWith('/core-service/projects') && req.method === 'GET') {
+    //   return true;
+    // }
 
     // Nếu URL thuộc danh sách ignore → cho qua luôn
     if (this.ignoreRoutes.some((route) => url.startsWith(route))) {
@@ -59,6 +63,9 @@ export class PermissionGuard implements CanActivate {
     );
 
     const permissions = data ?? [];
+
+    console.log(permissions);
+    
 
     // Nếu không có permission → cấm
     if (!Array.isArray(permissions) || permissions.length === 0) {
