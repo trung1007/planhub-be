@@ -3,6 +3,7 @@
 export class SprintListDto {
   id: number;
   releaseName: string | null;
+  projectId:number;
   releaseId: number;
   name: string;
   key:string;

@@ -5,6 +5,9 @@ import { JwtAuthGuard } from 'common/jwt-auth.guard';
 import { APP_GUARD } from '@nestjs/core';
 import { RedisProvider } from './redis/redis.provider';
 import { RateLimitGuard } from 'common/rate-limit.guard';
+import { PermissionGuard } from 'common/permission.guard';
+import { HttpModule } from '@nestjs/axios';
+import { PermissionService } from './services/permission.service';
 
 @Module({
   imports: [
@@ -12,6 +15,7 @@ import { RateLimitGuard } from 'common/rate-limit.guard';
       isGlobal: true,
     }),
     GatewayModule,
+    HttpModule,
   ],
   providers: [
     RedisProvider,
@@ -23,6 +27,11 @@ import { RateLimitGuard } from 'common/rate-limit.guard';
       provide: APP_GUARD,
       useClass: JwtAuthGuard,
     },
+    {
+      provide: APP_GUARD,
+      useClass: PermissionGuard,
+    },
+    PermissionService
   ],
 })
 export class AppModule {}

@@ -7,6 +7,9 @@ import { CoreRoute } from './routes/core.route';
 
 @Module({
   controllers: [UserRoute, AuthRoute, CoreRoute],
-  providers: [HttpProxyService, RedisProvider],
+  providers: [
+    HttpProxyService,
+    RedisProvider,
+  ],
 })
 export class GatewayModule {}

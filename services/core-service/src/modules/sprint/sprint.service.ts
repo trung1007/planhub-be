@@ -56,6 +56,7 @@ export class SprintService {
     // 3. Convert ngày FE gửi lên (string → Date)
     const sprint = this.sprintRepo.create({
       ...dto,
+      project_id:dto.projectId,
       release_id: dto.releaseId,
       is_active: dto.isActive,
       start_date: formatDate(dto.startDate),
@@ -87,6 +88,7 @@ export class SprintService {
       items.push({
         id: s.id,
         releaseName: s.release?.name || null,
+        projectId:s.project_id,
         releaseId: s.release_id,
         name: s.name,
         key: s.key,
@@ -132,7 +134,7 @@ export class SprintService {
       .where('project.id = :projectId', { projectId })
       .andWhere('sprint.is_active = :isActive', { isActive: true })
       .orderBy('sprint.name', 'ASC')
-      .select(['sprint.id', 'sprint.name', 'sprint.is_active'])
+      .select(['sprint.id', 'sprint.name', 'sprint.is_active', 'sprint.project_id'])
       .getMany();
   }
 
@@ -190,6 +192,7 @@ export class SprintService {
     }
     Object.assign(sprint, {
       ...dto,
+      project_id:dto.projectId,
       release_id: dto.releaseId,
       is_active: dto.isActive,
       start_date: formatDate(dto.startDate),
@@ -201,22 +204,20 @@ export class SprintService {
   }
 
   async removeByProject(projectId: number) {
-    const releases = await this.releaseRepo.find({
-      where: { project_id: projectId },
-      select: ['id'],
-    });
 
-    if (!releases.length) {
+    const sprints = await this.sprintRepo.find({
+      where:{project_id:projectId}
+    })
+
+     if (!sprints || sprints.length === 0) {
       return { deleted: 0 };
     }
 
-    const releaseIds = releases.map((r) => r.id);
+    // Xóa tất cả release
+    await this.sprintRepo.remove(sprints);
 
-    const result = await this.sprintRepo.delete({
-      release_id: In(releaseIds),
-    });
+    return { deleted: sprints.length };
 
-    return { deleted: result.affected ?? 0 };
   }
 
   async delete(id: number) {

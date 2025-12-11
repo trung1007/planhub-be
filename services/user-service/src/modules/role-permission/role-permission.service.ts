@@ -34,6 +34,22 @@ export class RolePermissionService {
     return this.repo.save(rows);
   }
 
+  async getPermissionsByRoleId(roleId: number) {
+    const permissions = await this.repo
+      .createQueryBuilder('rp')
+      .leftJoin('rp.permission', 'p')
+      .select(['p.id', 'p.code', 'p.method', 'p.url'])
+      .where('rp.role_id = :roleId', { roleId })
+      .getRawMany();
+
+    return permissions.map((item) => ({
+      id: item.p_id,
+      code: item.p_code,
+      method: item.p_method,
+      url: item.p_url,
+    }));
+  }
+
   async getPermissionsByRole(roleId: number, page = 1, limit = 10) {
     const pageNumber = Math.max(1, Number(page) || 1);
     const limitNumber = Math.max(1, Number(limit) || 10);

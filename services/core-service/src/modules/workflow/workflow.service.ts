@@ -63,6 +63,7 @@ export class WorkflowService {
           id: item.id,
           name: item.name,
           key: item.key,
+          projectId:item.project_id,
           projectName: item.project?.name,
           description: item.description,
           createdBy: createdBy?.username || null,

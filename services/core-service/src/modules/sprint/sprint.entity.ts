@@ -17,6 +17,9 @@ export class Sprint {
   id: number;
 
   @Column()
+  project_id: number;
+
+  @Column()
   release_id: number;
 
   @Column({ length: 50 })

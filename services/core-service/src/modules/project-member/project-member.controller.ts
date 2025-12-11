@@ -21,8 +21,19 @@ export class ProjectMemberController {
     return this.service.create(dto);
   }
 
+  @Get('role-permissions')
+  getUserPermissions(
+    @Query('projectId') projectId: number,
+    @Query('userId') userId: number,
+  ) {
+    return this.service.getUserPermissions(
+      Number(projectId),
+      Number(userId),
+    );
+  }
+
   @Get('member-role/:userId')
-  getRoleByUserId(@Param('userId') userId:number ){
+  getRoleByUserId(@Param('userId') userId: number) {
     return this.service.getRoleByUserId(userId);
   }
 

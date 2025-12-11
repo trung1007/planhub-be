@@ -37,6 +37,11 @@ export class RolePermissionController {
     return this.service.getAllRolePermissionIds(roleId);
   }
 
+  @Get('role/:roleId')
+  getPermissionsByRoleId(@Param('roleId') roleId: number) {
+    return this.service.getPermissionsByRoleId(roleId);
+  }
+
   @Patch(':id')
   update(@Param('id') id: string, @Body() dto: UpdateRolePermissionDto) {
     return this.service.update(+id, dto);

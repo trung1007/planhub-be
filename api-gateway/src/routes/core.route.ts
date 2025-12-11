@@ -61,8 +61,8 @@ export class CoreRoute {
     // console.log('Gateway Request Method:', method); // Log method
     // console.log('Gateway Request URL:', url); // Log URL
     // console.log('Gateway Request Headers:', headers); // Log headers
-    console.log('Gateway Request Body:', body); // Log body
-    console.log('Gateway Request user:', user); // Log body
+    // console.log('Gateway Request Body:', body); // Log body
+    // console.log('Gateway Request user:', user); // Log body
 
     try {
       const result = await this.proxy.forward(req, method, url, body, headers);

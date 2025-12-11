@@ -23,6 +23,10 @@ export class ActionSprintDto {
 
   @IsNumber()
   @IsNotEmpty()
+  projectId: number;
+
+  @IsNumber()
+  @IsNotEmpty()
   releaseId: number;
 
   @IsBoolean()

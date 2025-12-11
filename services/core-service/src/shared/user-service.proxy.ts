@@ -12,8 +12,8 @@ export interface UserProxyEntity {
 
 @Injectable()
 export class UserServiceProxy {
-  private gatewayUrl = process.env.API_GATEWAY_URL || 'http://localhost:3000';
-  private userServiceUrl = process.env.USER_SERVICE_URL || 'http://localhost:3000';
+  private userServiceUrl =
+    process.env.USER_SERVICE_URL || 'http://localhost:3000';
 
   constructor(
     private readonly http: HttpService,
@@ -33,7 +33,7 @@ export class UserServiceProxy {
       );
       return response.data;
     } catch (error) {
-      console.error('Error fetching user:', error?.message);
+      // console.error('Error fetching user:', error?.message);
       return null;
     }
   }
@@ -43,7 +43,7 @@ export class UserServiceProxy {
       const token = this.tokenManager.getToken();
       const response = await firstValueFrom(
         this.http.post(
-          `${this.gatewayUrl}/user-service/users/list-by-ids`,
+          `${this.userServiceUrl}/user-service/users/list-by-ids`,
           { ids }, // body
           {
             headers: {
@@ -55,7 +55,7 @@ export class UserServiceProxy {
       );
       return response.data;
     } catch (error) {
-      console.error('Error fetching users by ids:', error?.message);
+      // console.error('Error fetching users by ids:', error?.message);
       return [];
     }
   }
@@ -64,7 +64,7 @@ export class UserServiceProxy {
     try {
       const token = this.tokenManager.getToken();
       const response = await firstValueFrom(
-        this.http.get(`${this.gatewayUrl}/user-service/roles/${id}`, {
+        this.http.get(`${this.userServiceUrl}/user-service/roles/${id}`, {
           headers: {
             Authorization: `Bearer ${token}`,
             'x-from-core-service': 'true',
@@ -73,8 +73,34 @@ export class UserServiceProxy {
       );
       return response.data;
     } catch (error) {
-      console.error('Error fetching user:', error?.message);
+      console.log(error);
+      
+      // console.error('Error fetching user:', error?.message);
       return null;
+    }
+  }
+
+  async getPermissionsByRoleId(roleId: number) {
+    try {
+      const token = this.tokenManager.getToken();
+
+      const response = await firstValueFrom(
+        this.http.get(
+          `${this.userServiceUrl}/user-service/role-permissions/role/${roleId}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'x-from-core-service': 'true',
+            },
+          },
+        ),
+      );
+      
+
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching permissions by roleId:', error?.message);
+      return { permissions: [] };
     }
   }
 }

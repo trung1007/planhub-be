@@ -94,6 +94,7 @@ export class ProjectMemberService {
         this.userProxy.getUserById(m.created_by).catch(() => null),
       ]);
 
+      
       items.push({
         id: m.id,
         projectName: m.project?.name ?? null,
@@ -213,5 +214,28 @@ export class ProjectMemberService {
     });
 
     return list.map((i) => i.user_id);
+  }
+
+  async getUserPermissions(projectId: number, userId: number) {
+    // STEP 1: Lấy roleId từ project_member
+    const membership = await this.memberRepo.findOne({
+      where: { project_id: projectId, user_id: userId },
+    });
+
+    if (!membership) {
+      return {
+        roleId: null,
+        permissions: [],
+      };
+    }
+
+    const roleId = membership.role_id;
+
+    const permissionData = await this.userProxy.getPermissionsByRoleId(roleId);
+
+    return {
+      roleId,
+      permissions: permissionData ?? [],
+    };
   }
 }

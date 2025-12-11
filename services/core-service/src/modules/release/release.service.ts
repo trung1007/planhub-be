@@ -94,7 +94,7 @@ export class ReleaseService {
 
   async findList() {
     return this.releaseRepo.find({
-      select: ['id', 'name'],
+      select: ['id', 'name', 'project_id'],
       order: { name: 'ASC' },
     });
   }
