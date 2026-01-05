@@ -13,6 +13,7 @@ import { CommentModule } from './modules/comment/comment.module';
 import { StatusModule } from './modules/status/status.module';
 import { TransitionModule } from './modules/transition/transition.module';
 import { EventHandlersModule } from './events/event-handlers.module';
+import { KafkaModule } from './kafka/kafka.module';
 
 @Module({
   imports: [
@@ -41,6 +42,7 @@ import { EventHandlersModule } from './events/event-handlers.module';
     StatusModule,
     TransitionModule,
     EventHandlersModule,
+    KafkaModule
   ],
 })
 export class AppModule {}

@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { SubtasksModule } from './subtasks/subtasks.module';
+import { KafkaModule } from './kafka/kafka.module';
 
 @Module({
   imports: [
@@ -8,7 +9,8 @@ import { SubtasksModule } from './subtasks/subtasks.module';
       isGlobal: true,
     }),
 
-    SubtasksModule
+    SubtasksModule,
+    KafkaModule
 
   ],
 })
