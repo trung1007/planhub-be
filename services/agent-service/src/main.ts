@@ -8,7 +8,7 @@ async function bootstrap() {
     transport: Transport.KAFKA,
     options: {
       client: {
-        clientId: 'agent-service',
+        clientId: 'agent-service-consumer',
         brokers: ['localhost:9092'],
       },
       consumer: {

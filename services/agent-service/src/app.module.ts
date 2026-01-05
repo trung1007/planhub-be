@@ -11,7 +11,6 @@ import { KafkaModule } from './kafka/kafka.module';
 
     SubtasksModule,
     KafkaModule
-
   ],
 })
 export class AppModule {}

@@ -1,26 +1,22 @@
-import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
+// core-service/src/kafka/agent.producer.ts
+import { Inject, Injectable } from '@nestjs/common';
 import { ClientKafka } from '@nestjs/microservices';
+import { randomUUID } from 'crypto';
 
 @Injectable()
-export class AgentProducer implements OnModuleInit {
+export class AgentProducer {
   constructor(
     @Inject('KAFKA_CLIENT')
     private readonly kafka: ClientKafka,
   ) {}
 
-  async onModuleInit() {
-    await this.kafka.connect();
-    this.sendDemoCommand();
-  }
-
-  async sendDemoCommand() {
+  async sendCommand(payload: any) {
     const message = {
-      commandId: crypto.randomUUID(),
+      commandId: randomUUID(),
       type: 'PROCESS_JOB',
-      payload: {
-        ok: false, // đổi true để test success
-      },
+      payload,
       retryCount: 0,
+      replyTopic: 'agent.reply',
     };
 
     console.log('📤 Sending command:', message);
@@ -29,5 +25,10 @@ export class AgentProducer implements OnModuleInit {
       key: message.commandId,
       value: message,
     });
+
+    return {
+      commandId: message.commandId,
+      status: 'SENT',
+    };
   }
 }

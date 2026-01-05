@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { AgentProducer } from './agent.producer';
+import { AgentReplyConsumer } from './agent-reply.consumer';
 
 @Module({
   imports: [
@@ -10,7 +11,7 @@ import { AgentProducer } from './agent.producer';
         transport: Transport.KAFKA,
         options: {
           client: {
-            clientId: 'core-service',
+            clientId: 'core-service-producer',
             brokers: ['localhost:9092'],
           },
           producerOnlyMode: true,
@@ -18,6 +19,7 @@ import { AgentProducer } from './agent.producer';
       },
     ]),
   ],
+  controllers: [AgentReplyConsumer],
   providers: [AgentProducer],
   exports: [AgentProducer],
 })

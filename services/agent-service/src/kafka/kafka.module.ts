@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { AgentConsumer } from './agent.consumer';
 import { RetryConsumer } from './retry.consumer';
+import { SubtasksModule } from 'src/subtasks/subtasks.module';
 
 @Module({
   imports: [
@@ -14,10 +15,12 @@ import { RetryConsumer } from './retry.consumer';
             clientId: 'agent-service-producer',
             brokers: ['localhost:9092'],
           },
+          producerOnlyMode: true,
         },
       },
     ]),
+    SubtasksModule
   ],
-  providers: [AgentConsumer, RetryConsumer],
+  controllers: [AgentConsumer, RetryConsumer],
 })
 export class KafkaModule {}
