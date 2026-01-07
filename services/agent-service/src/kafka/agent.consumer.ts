@@ -24,10 +24,10 @@ export class AgentConsumer implements OnModuleInit {
 
   @EventPattern('agent.command')
   async handleCommand(@Payload() payload: any) {
-    console.log(payload);
-
     // ✅ NestJS có thể truyền thẳng value
-    const value = payload?.value ?? payload;
+    const value = payload?.data ?? payload;
+
+    console.log('value from message kafka:', value);
 
     if (!value) {
       console.error('❌ Received empty Kafka message');
@@ -36,10 +36,10 @@ export class AgentConsumer implements OnModuleInit {
 
     const retryCount = value.retryCount ?? 0;
 
-    console.log(
-      `📥 [AGENT] Received command (retry=${retryCount})`,
-      JSON.stringify(value),
-    );
+    // console.log(
+    //   `📥 [AGENT] Received command (retry=${retryCount})`,
+    //   JSON.stringify(value),
+    // );
 
     try {
       // const result = await this.process(value.payload);
@@ -52,13 +52,17 @@ export class AgentConsumer implements OnModuleInit {
       const geminiResult = await this.geminiSubtasksService.generate({
         run_id: String(value.commandId),
         issue: {
-          name: value.payload.issue?.name,
-          summary: value.payload.issue?.summary,
-          description: value.payload.issue?.description,
-          type: value.payload.issue?.type,
-          tags: value.payload.issue?.tags,
-          priority: value.payload.issue?.priority,
-          status: value.payload.issue?.status,
+          name: value.payload?.data?.name,
+          summary: value.payload?.data?.summary,
+          description: value.payload?.data?.description,
+          type: value.payload?.data?.type,
+          tags: value.payload?.data?.tags,
+          priority: value.payload?.data?.priority,
+          status: value.payload?.data?.status,
+          list_status: value.payload?.data?.statusList,
+          project: value.payload?.data?.projectName,
+          sprint:value.payload?.data?.activeSprint,
+          release:value.payload?.data?.releaseName,
         },
         max_subtasks: value.payload.max_subtasks ?? 6,
         language: value.payload.language ?? 'vi',
@@ -144,9 +148,6 @@ export class AgentConsumer implements OnModuleInit {
       console.warn(`⚠️ [AGENT] No replyTopic for ${value.commandId}`);
       return;
     }
-
-    console.log(result);
-    
 
     this.kafka.emit(value.replyTopic, {
       key: value.commandId,

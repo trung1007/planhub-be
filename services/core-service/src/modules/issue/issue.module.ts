@@ -15,6 +15,7 @@ import { Workflow } from '../workflow/workflow.entity';
 import { Status } from '../status/status.entity';
 import { Transition } from '../transition/transition.entity';
 import { SprintModule } from '../sprint/sprint.module';
+import { KafkaModule } from 'src/kafka/kafka.module';
 
 @Module({
   imports: [
@@ -32,7 +33,8 @@ import { SprintModule } from '../sprint/sprint.module';
     ]),
     SharedModule,
     IssueHistoryModule,
-    SprintModule
+    SprintModule,
+    KafkaModule,
   ],
   controllers: [IssueController],
   providers: [IssueService],

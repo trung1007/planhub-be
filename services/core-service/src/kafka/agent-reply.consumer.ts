@@ -21,7 +21,7 @@ export class AgentReplyConsumer {
     console.log('partition:', context.getPartition());
     console.log('offset:', context.getMessage().offset);
     console.log('commandId:', value.commandId);
-    console.log(value);
+    console.log(value.result.raw);
     
   }
 }

@@ -12,14 +12,14 @@ export class AgentProducer {
 
   async sendCommand(payload: any) {
     const message = {
-      commandId: randomUUID(),
-      type: 'PROCESS_JOB',
+      commandId: 'generate-subtask-' + randomUUID(),
+      type: 'GENERATE SUBTASK',
       payload,
       retryCount: 0,
       replyTopic: 'agent.reply',
     };
 
-    console.log('📤 Sending command:', message);
+    // console.log('📤 Sending command:', message);
 
     this.kafka.emit('agent.command', {
       key: message.commandId,

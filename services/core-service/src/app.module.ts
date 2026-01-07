@@ -14,7 +14,6 @@ import { StatusModule } from './modules/status/status.module';
 import { TransitionModule } from './modules/transition/transition.module';
 import { EventHandlersModule } from './events/event-handlers.module';
 import { KafkaModule } from './kafka/kafka.module';
-import { JobModule } from './job/job.module';
 
 @Module({
   imports: [
@@ -44,7 +43,6 @@ import { JobModule } from './job/job.module';
     TransitionModule,
     EventHandlersModule,
     KafkaModule,
-    JobModule
   ],
 })
 export class AppModule {}

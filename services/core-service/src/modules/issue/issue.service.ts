@@ -25,6 +25,7 @@ import { Workflow } from '../workflow/workflow.entity';
 import { Status } from '../status/status.entity';
 import { Transition } from '../transition/transition.entity';
 import { SprintService } from '../sprint/sprint.service';
+import { AgentProducer } from 'src/kafka/agent.producer';
 
 @Injectable()
 export class IssueService {
@@ -54,6 +55,8 @@ export class IssueService {
     private readonly historyService: IssueHistoryService,
 
     private readonly sprintService: SprintService,
+
+    private readonly agentProducer: AgentProducer,
   ) {}
 
   async findAll(page: number = 1, limit: number = 10) {
@@ -428,6 +431,20 @@ export class IssueService {
       ),
     );
     return saved;
+  }
+
+  async generateByAiAgent(dto: any) {
+    const currentIssue = await this.findOne(31);
+    const result = await this.agentProducer.sendCommand({
+      // ok: dto.ok,
+      // data: dto.data,
+      data: currentIssue,
+      max_subtasks: 3
+    });
+    return {
+      message: 'Issue sent to agent-service to generate subtask',
+      ...result,
+    };
   }
 
   async update(id: number, dto: UpdateIssueDto, user_id: number) {

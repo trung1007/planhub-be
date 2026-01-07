@@ -58,6 +58,11 @@ export class IssueController {
     return this.issueService.create(dto, user_id);
   }
 
+  @Post('generate-by-ai-agent')
+  generateByAiAgent(@Body() dto:any){
+    return this.issueService.generateByAiAgent(dto)
+  }
+
   @Post('assign-to-active-sprint')
   assignIssueToSprint(@Body() body: AssignIssueToSprintDto, @Req() req) {
     const user_id = Number(req.headers['x-user-id']);
