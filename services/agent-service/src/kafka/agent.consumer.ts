@@ -27,7 +27,6 @@ export class AgentConsumer implements OnModuleInit {
     // ✅ NestJS có thể truyền thẳng value
     const value = payload?.data ?? payload;
 
-    console.log('value from message kafka:', value);
 
     if (!value) {
       console.error('❌ Received empty Kafka message');
@@ -61,8 +60,12 @@ export class AgentConsumer implements OnModuleInit {
           status: value.payload?.data?.status,
           list_status: value.payload?.data?.statusList,
           project: value.payload?.data?.projectName,
-          sprint:value.payload?.data?.activeSprint,
-          release:value.payload?.data?.releaseName,
+          sprint: value.payload?.data?.activeSprint,
+          release: value.payload?.data?.releaseName,
+          parent_issue_id: value.payload?.data?.id,
+          sprint_id: value.payload?.data?.sprint_id,
+          assignee_id: value.payload?.data?.assignee_id,
+          reporter_id: value.payload?.data?.reporter_id,
         },
         max_subtasks: value.payload.max_subtasks ?? 6,
         language: value.payload.language ?? 'vi',

@@ -1,10 +1,14 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { AgentProducer } from './agent.producer';
 import { AgentReplyConsumer } from './agent-reply.consumer';
+import { CoreKafkaTopicService } from './core-kafka-topic.service';
+import { IssueModule } from 'src/modules/issue/issue.module';
+
 
 @Module({
   imports: [
+    forwardRef(() => IssueModule), 
     ClientsModule.register([
       {
         name: 'KAFKA_CLIENT',
@@ -18,9 +22,10 @@ import { AgentReplyConsumer } from './agent-reply.consumer';
         },
       },
     ]),
+    
   ],
   controllers: [AgentReplyConsumer],
-  providers: [AgentProducer],
+  providers: [AgentProducer, CoreKafkaTopicService],
   exports: [AgentProducer],
 })
 export class KafkaModule {}

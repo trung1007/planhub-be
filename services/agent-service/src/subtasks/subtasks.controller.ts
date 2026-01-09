@@ -1,5 +1,4 @@
 import { Body, Controller, Post } from '@nestjs/common';
-import { OpenAiSubtasksService } from './openai-subtasks.service';
 import { GeminiSubtasksService } from './gemini-subtasks.service';
 
 type GenerateSubtasksBody = {

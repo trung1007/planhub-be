@@ -25,7 +25,6 @@ export enum IssueType {
   STORY = 'story',
   FEATURE = 'feature',
   IMPROVEMENT = 'improvement',
-  SUBTASK = 'subtask',
 }
 
 type SubtaskOutput = {
@@ -55,6 +54,10 @@ type GenerateSubtasksInput = {
     project: string | null;
     sprint: string | null;
     release: string | null;
+    sprint_id: number | null;
+    parent_issue_id: number | null;
+    assignee_id: number | null;
+    reporter_id: number | null;
   };
   max_subtasks?: number;
   language?: 'vi' | 'en';
@@ -79,7 +82,9 @@ export class GeminiSubtasksService {
     this.ai = new GoogleGenAI({});
   }
 
-  async generate(input: GenerateSubtasksInput): Promise<GenerateSubtasksResult> {
+  async generate(
+    input: GenerateSubtasksInput,
+  ): Promise<GenerateSubtasksResult> {
     const model = process.env.GEMINI_MODEL ?? 'gemini-2.5-flash';
     const language = input.language ?? 'vi';
     const max = clamp(input.max_subtasks ?? 6, 1, 12);
@@ -90,7 +95,7 @@ export class GeminiSubtasksService {
     );
 
     // fallback defaults nếu model trả sai/thiếu
-    const fallbackType: IssueType = input.issue.type ?? IssueType.SUBTASK;
+    const fallbackType: IssueType = input.issue.type ?? IssueType.TASK;
     const fallbackPriority: IssuePriority =
       input.issue.priority ?? IssuePriority.MEDIUM;
     const fallbackTags: TagEnum[] = Array.isArray(input.issue.tags)
@@ -108,7 +113,12 @@ export class GeminiSubtasksService {
       `Bạn là trợ lý chia nhỏ issue thành subtasks.`,
       `Hãy trả về CHỈ JSON hợp lệ, không markdown, không code fence.`,
       `Format JSON bắt buộc:`,
-      `{"run_id":"...","subtasks":[{"name":"...","type":"...","tags":["..."],"status":"...","priority":"...","description":"..."}]}`,
+      `{"run_id":"...","subtasks":[{"name":"...","type":"...","tags":["..."],"status":"...","priority":"...","description":"...", "summary":"...",
+            parent_issue_id:${input.issue.parent_issue_id},
+
+      sprint_id:${input.issue.sprint_id},
+      reporter_id:${input.issue.reporter_id},
+      assignee_id:${input.issue.assignee_id}}]}`,
       ``,
       `RÀNG BUỘC ENUM (BẮT BUỘC TUÂN THỦ):`,
       `- type chỉ được là một trong: ${Object.values(IssueType).join(', ')}`,
@@ -150,7 +160,9 @@ export class GeminiSubtasksService {
       const jsonText = extractJsonObject(raw);
       const parsed = JSON.parse(jsonText);
 
-      const subtasksRaw = Array.isArray(parsed?.subtasks) ? parsed.subtasks : [];
+      const subtasksRaw = Array.isArray(parsed?.subtasks)
+        ? parsed.subtasks
+        : [];
 
       const subtasks: SubtaskOutput[] = subtasksRaw
         .slice(0, max)
@@ -164,11 +176,7 @@ export class GeminiSubtasksService {
           const tags = normalizeTags(s?.tags, fallbackTags);
 
           // ✅ status MUST be in list_status (allowedMap)
-          const status = normalizeStatus(
-            s?.status,
-            fallbackStatus,
-            allowedMap,
-          );
+          const status = normalizeStatus(s?.status, fallbackStatus, allowedMap);
 
           return { name, type, tags, status, priority, description };
         })
@@ -193,7 +201,10 @@ function clamp(n: number, min: number, max: number) {
 }
 
 function extractJsonObject(text: string): string {
-  const cleaned = text.replace(/```json/gi, '```').replace(/```/g, '').trim();
+  const cleaned = text
+    .replace(/```json/gi, '```')
+    .replace(/```/g, '')
+    .trim();
 
   const first = cleaned.indexOf('{');
   const last = cleaned.lastIndexOf('}');
@@ -204,12 +215,16 @@ function extractJsonObject(text: string): string {
 }
 
 function normalizeType(value: any, fallback: IssueType): IssueType {
-  const v = String(value ?? '').toLowerCase().trim();
+  const v = String(value ?? '')
+    .toLowerCase()
+    .trim();
   return ALLOWED_TYPES.has(v as IssueType) ? (v as IssueType) : fallback;
 }
 
 function normalizePriority(value: any, fallback: IssuePriority): IssuePriority {
-  const v = String(value ?? '').toLowerCase().trim();
+  const v = String(value ?? '')
+    .toLowerCase()
+    .trim();
   return ALLOWED_PRIORITIES.has(v as IssuePriority)
     ? (v as IssuePriority)
     : fallback;
@@ -218,7 +233,11 @@ function normalizePriority(value: any, fallback: IssuePriority): IssuePriority {
 function normalizeTags(value: any, fallback: TagEnum[]): TagEnum[] {
   if (!Array.isArray(value)) return fallback;
   const cleaned = value
-    .map((t) => String(t ?? '').toLowerCase().trim())
+    .map((t) =>
+      String(t ?? '')
+        .toLowerCase()
+        .trim(),
+    )
     .filter((t) => ALLOWED_TAGS.has(t as TagEnum)) as TagEnum[];
   return Array.from(new Set(cleaned));
 }
@@ -232,7 +251,8 @@ function buildAllowedStatusMap(list: string[] | null | undefined): {
   allowedMap: Map<string, string>;
 } {
   const allowedList =
-    Array.isArray(list) && list.map((s) => String(s ?? '').trim()).filter(Boolean).length
+    Array.isArray(list) &&
+    list.map((s) => String(s ?? '').trim()).filter(Boolean).length
       ? Array.from(
           new Set(list.map((s) => String(s ?? '').trim()).filter(Boolean)),
         )
@@ -250,7 +270,9 @@ function pickFallbackStatus(
   allowedMap: Map<string, string>,
   allowedList: string[],
 ): string {
-  const c = String(candidate ?? '').toLowerCase().trim();
+  const c = String(candidate ?? '')
+    .toLowerCase()
+    .trim();
   if (c && allowedMap.has(c)) return allowedMap.get(c)!;
   return allowedList[0] ?? 'to_do';
 }
@@ -260,12 +282,18 @@ function normalizeStatus(
   fallback: string,
   allowedMap: Map<string, string>,
 ): string {
-  const v = String(value ?? '').toLowerCase().trim();
+  const v = String(value ?? '')
+    .toLowerCase()
+    .trim();
   if (v && allowedMap.has(v)) return allowedMap.get(v)!;
 
-  const fb = String(fallback ?? '').toLowerCase().trim();
+  const fb = String(fallback ?? '')
+    .toLowerCase()
+    .trim();
   if (fb && allowedMap.has(fb)) return allowedMap.get(fb)!;
 
   // should never happen, but keep safe:
-  return allowedMap.get('to_do') ?? Array.from(allowedMap.values())[0] ?? 'to_do';
+  return (
+    allowedMap.get('to_do') ?? Array.from(allowedMap.values())[0] ?? 'to_do'
+  );
 }

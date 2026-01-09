@@ -24,10 +24,9 @@ export class IssueController {
   }
 
   @Get('scrum')
-  getScrumboard(){
+  getScrumboard() {
     return this.issueService.getScrumboard();
   }
-
 
   @Get('issue-list')
   getIssueList() {
@@ -58,9 +57,12 @@ export class IssueController {
     return this.issueService.create(dto, user_id);
   }
 
-  @Post('generate-by-ai-agent')
-  generateByAiAgent(@Body() dto:any){
-    return this.issueService.generateByAiAgent(dto)
+  @Post('generate-by-ai-agent/:id')
+  generateByAiAgent(
+    @Param('id') id: number,
+    @Body('max_subtasks') max_subtasks: number,
+  ) {
+    return this.issueService.generateByAiAgent(id, max_subtasks);
   }
 
   @Post('assign-to-active-sprint')

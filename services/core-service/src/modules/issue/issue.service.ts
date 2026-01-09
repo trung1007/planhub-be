@@ -433,13 +433,16 @@ export class IssueService {
     return saved;
   }
 
-  async generateByAiAgent(dto: any) {
-    const currentIssue = await this.findOne(31);
+  async generateByAiAgent(id: number, max_subtasks:number) {
+    const currentIssue = await this.findOne(id);
+    if(!currentIssue){
+      throw new NotFoundException('Issue not found');
+    }
     const result = await this.agentProducer.sendCommand({
       // ok: dto.ok,
       // data: dto.data,
       data: currentIssue,
-      max_subtasks: 3
+      max_subtasks: max_subtasks
     });
     return {
       message: 'Issue sent to agent-service to generate subtask',
